@@ -1,1 +1,2 @@
 - [Calendar-date code generation](calendar-date-codegen.md) — Orval Zod date coercion must be off for calendar-only rowing dates.
+- [Embedded preview sessions](embedded-preview-sessions.md) — verify cookie auth inside a cross-site iframe; successful curl login can miss browser cookie blocking.

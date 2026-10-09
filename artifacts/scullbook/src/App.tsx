@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { getGetCurrentUserQueryKey } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -15,7 +16,20 @@ import {
   Router as WouterRouter,
 } from 'wouter';
 
-const queryClient = new QueryClient();
+function handleSessionError(error: unknown) {
+  const failure = error as { status?: number; url?: string };
+  if (failure.status === 401 && !failure.url?.includes('/auth/login')) {
+    // A cached identity must not leave an expired/blocked session in the admin UI.
+    queryClient.setQueryData(getGetCurrentUserQueryKey(), null);
+  }
+}
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: handleSessionError }),
+  mutationCache: new MutationCache({ onError: handleSessionError }),
+  defaultOptions: {
+    queries: { retry: (count, error) => (error as { status?: number }).status !== 401 && count < 2 },
+  },
+});
 
 function Guard({ role, children }: { role: 'admin' | 'rower'; children: ReactNode }) {
   const { user, isLoading } = useAuth();

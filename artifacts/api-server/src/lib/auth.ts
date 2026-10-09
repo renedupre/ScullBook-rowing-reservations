@@ -27,7 +27,20 @@ export function publicUser(user: UserRecord) {
 }
 const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
 function cookieOptions(req: Request) {
-  return { httpOnly: true, secure: req.secure, sameSite: "lax" as const, path: "/", maxAge: IDLE_MS };
+  // Preview is embedded on a different site. CHIPS permits an HttpOnly session
+  // in that iframe even when the browser blocks unpartitioned third-party cookies.
+  return {
+    httpOnly: true,
+    secure: req.secure,
+    sameSite: req.secure ? "none" as const : "lax" as const,
+    partitioned: req.secure,
+    path: "/",
+    maxAge: IDLE_MS,
+  };
+}
+function clearSessionCookie(req: Request, res: Response) {
+  const { maxAge: _maxAge, ...options } = cookieOptions(req);
+  res.clearCookie(COOKIE, options);
 }
 export async function createSession(req: Request, res: Response, userId: number) {
   if (req.cookies?.[COOKIE]) await db.delete(sessionsTable).where(eq(sessionsTable.tokenHash, tokenHash(req.cookies[COOKIE])));
@@ -38,7 +51,7 @@ export async function createSession(req: Request, res: Response, userId: number)
 export async function endSession(req: Request, res: Response) {
   const token = req.cookies?.[COOKIE];
   if (token) await db.delete(sessionsTable).where(eq(sessionsTable.tokenHash, tokenHash(token)));
-  res.clearCookie(COOKIE, { path: "/", sameSite: "lax", secure: req.secure, httpOnly: true });
+  clearSessionCookie(req, res);
 }
 export async function requireUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = req.cookies?.[COOKIE];
@@ -47,7 +60,7 @@ export async function requireUser(req: Request, res: Response, next: NextFunctio
     .innerJoin(usersTable, eq(sessionsTable.userId, usersTable.id))
     .where(and(eq(sessionsTable.tokenHash, tokenHash(token)), gt(sessionsTable.expiresAt, new Date())));
   if (!record) {
-    res.clearCookie(COOKIE, { path: "/" });
+    clearSessionCookie(req, res);
     res.status(401).json({ error: "Your session expired. Please log in again." }); return;
   }
   res.locals.user = record.user;
