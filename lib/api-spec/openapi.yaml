@@ -10,6 +10,14 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Rower and administrator accounts
+  - name: boats
+    description: Boat configuration
+  - name: launches
+    description: Available rowing dates and boats
+  - name: reservations
+    description: Seat reservations and rosters
 paths:
   /healthz:
     get:
@@ -24,6 +32,300 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/register:
+    post:
+      operationId: registerRower
+      tags: [auth]
+      summary: Register a rower account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Sign in with email or the administrator ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the signed-in account
+      responses:
+        "200":
+          description: Current account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: End the current session
+      responses:
+        "204":
+          description: Signed out
+  /auth/change-password:
+    post:
+      operationId: changePassword
+      tags: [auth]
+      summary: Change the administrator password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "204":
+          description: Password updated
+  /boats:
+    get:
+      operationId: listBoats
+      tags: [boats]
+      summary: List configured boats
+      responses:
+        "200":
+          description: Boat fleet
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Boat"
+    post:
+      operationId: createBoat
+      tags: [boats]
+      summary: Add a boat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BoatInput"
+      responses:
+        "201":
+          description: Boat added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Boat"
+  /boats/{boatId}:
+    patch:
+      operationId: updateBoat
+      tags: [boats]
+      summary: Update a boat
+      parameters:
+        - name: boatId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BoatInput"
+      responses:
+        "200":
+          description: Updated boat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Boat"
+    delete:
+      operationId: deleteBoat
+      tags: [boats]
+      summary: Remove a boat
+      parameters:
+        - name: boatId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Boat removed
+  /launches:
+    get:
+      operationId: listLaunches
+      tags: [launches]
+      summary: List upcoming available rowing sessions
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Upcoming sessions with remaining seats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Launch"
+    post:
+      operationId: createLaunch
+      tags: [launches]
+      summary: Schedule a boat for a rowing date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LaunchInput"
+      responses:
+        "201":
+          description: Session scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Launch"
+  /launches/{launchId}:
+    delete:
+      operationId: deleteLaunch
+      tags: [launches]
+      summary: Remove an upcoming boat session
+      parameters:
+        - name: launchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Session removed
+  /launches/{launchId}/seats:
+    get:
+      operationId: getLaunchSeats
+      tags: [launches]
+      summary: Get seat assignments for a boat session
+      parameters:
+        - name: launchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Seat map
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Seat"
+  /reservations:
+    get:
+      operationId: listMyReservations
+      tags: [reservations]
+      summary: List the signed-in rower's reservations
+      responses:
+        "200":
+          description: Rower reservations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reservation"
+    post:
+      operationId: reserveSeat
+      tags: [reservations]
+      summary: Reserve a seat on a boat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservationInput"
+      responses:
+        "201":
+          description: Seat reserved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+  /reservations/{reservationId}:
+    delete:
+      operationId: cancelReservation
+      tags: [reservations]
+      summary: Cancel a reservation
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Reservation canceled
+  /admin/roster:
+    get:
+      operationId: listRoster
+      tags: [reservations]
+      summary: List scheduled boat rosters
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Reservation roster
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RosterEntry"
+  /admin/summary:
+    get:
+      operationId: getAdminSummary
+      tags: [reservations]
+      summary: Get the administrator dashboard totals and next sessions
+      responses:
+        "200":
+          description: Summary of upcoming rowing activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +335,122 @@ components:
           type: string
       required:
         - status
+    User:
+      type: object
+      required: [id, login, firstName, lastName, role]
+      properties:
+        id: { type: integer }
+        login: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+        role: { type: string, enum: [admin, rower] }
+    SessionResponse:
+      type: object
+      required: [user]
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+    RegisterInput:
+      type: object
+      required: [email, password, passwordConfirm, firstName, lastName]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 10 }
+        passwordConfirm: { type: string, minLength: 10 }
+        firstName: { type: string, minLength: 1, maxLength: 80 }
+        lastName: { type: string, minLength: 1, maxLength: 80 }
+    LoginInput:
+      type: object
+      required: [login, password]
+      properties:
+        login: { type: string, minLength: 1 }
+        password: { type: string, minLength: 1 }
+    ChangePasswordInput:
+      type: object
+      required: [currentPassword, newPassword, newPasswordConfirm]
+      properties:
+        currentPassword: { type: string, minLength: 1 }
+        newPassword: { type: string, minLength: 10 }
+        newPasswordConfirm: { type: string, minLength: 10 }
+    Boat:
+      type: object
+      required: [id, name, type, seats]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        type:
+          type: string
+          enum: [Single Scull, Double Scull, Quadruple Scull, Octuple Scull]
+        seats: { type: integer }
+    BoatInput:
+      type: object
+      required: [name, type, seats]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        type:
+          type: string
+          enum: [Single Scull, Double Scull, Quadruple Scull, Octuple Scull]
+        seats: { type: integer, minimum: 1, maximum: 9 }
+    Launch:
+      type: object
+      required: [id, date, boat, bookedSeats, availableSeats, full]
+      properties:
+        id: { type: integer }
+        date: { type: string, format: date }
+        boat: { $ref: "#/components/schemas/Boat" }
+        bookedSeats: { type: integer }
+        availableSeats: { type: integer }
+        full: { type: boolean }
+    LaunchInput:
+      type: object
+      required: [date, boatId]
+      properties:
+        date: { type: string, format: date }
+        boatId: { type: integer }
+    Seat:
+      type: object
+      required: [position, label, occupied]
+      properties:
+        position: { type: integer }
+        label: { type: string }
+        occupied: { type: boolean }
+        rowerName: { type: ["string", "null"] }
+    Reservation:
+      type: object
+      required: [id, launchId, date, boat, position, seatLabel]
+      properties:
+        id: { type: integer }
+        launchId: { type: integer }
+        date: { type: string, format: date }
+        boat: { $ref: "#/components/schemas/Boat" }
+        position: { type: integer }
+        seatLabel: { type: string }
+    ReservationInput:
+      type: object
+      required: [launchId, position]
+      properties:
+        launchId: { type: integer }
+        position: { type: integer, minimum: 1, maximum: 9 }
+    RosterEntry:
+      type: object
+      required: [launchId, date, boat, seats]
+      properties:
+        launchId: { type: integer }
+        date: { type: string, format: date }
+        boat: { $ref: "#/components/schemas/Boat" }
+        seats:
+          type: array
+          items:
+            $ref: "#/components/schemas/Seat"
+    AdminSummary:
+      type: object
+      required: [rowerCount, boatCount, upcomingLaunchCount, reservationCount, nextLaunches]
+      properties:
+        rowerCount: { type: integer }
+        boatCount: { type: integer }
+        upcomingLaunchCount: { type: integer }
+        reservationCount: { type: integer }
+        nextLaunches:
+          type: array
+          items:
+            $ref: "#/components/schemas/Launch"
 

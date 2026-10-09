@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "ScullBook"
+description = "A rowing club reservation app where rowers register for available scull seats and administrators configure boats, sessions, and rosters."
+version = "1.0.0"
+id = "artifacts/scullbook"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18913
+
+[services.development]
+run = "pnpm --filter @workspace/scullbook run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/scullbook", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/scullbook/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18913"
+BASE_PATH = "/"

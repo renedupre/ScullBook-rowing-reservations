@@ -1,0 +1,46 @@
+cull Boat Registration Application called “ScullBook”
+Application should start with a splash page a logo with a picture of an 9 person scull on a lake and the title ScullBook.  
+Application will have an Admin Screen for Boat Configuration and data setup as well as viewing upcoming reservations.  
+Rower Screen will allow the registered rower to reserve or cancel a spot on a boat.
+ 
+Login and register buttons are in the top right corner of initial splash page. 
+Allow user to select Login button and enter their email and password in a pop-up dialog box.  
+If user selects register button, they will be greeted with a welcome message for new rowers and be prompted to supply their email as their user id and a password.  Enforce 10 digit complex password rules with one special character and at least one Upper and one lower case letter, and one number.
+Also collect their first name and last name.
+Password should be entered twice to ensure it is entered correctly.
+User hits submit button to create their account which is stored in a database.
+Password need not be encrypted for this application.  
+
+The user list table needs to have an identifier for the application administrator which will sign in with the ID “admin” and not follow e-mail format rules.  Initial default password will be “Happy$1234”.   Admin will have a function to change their password which is also stored in the database. 
+
+Admin screen - Boat Configuration 
+Screen to set up boats which has a boat name, boat type, number of rower seats.
+Boat types are “Single Scull” which is a one person boat, “Double Scull” which is a two person boat, “Quadruple Scull” which is a four person boat, “Octuple Scull” which holds 9. 
+
+The Octuple Scull’s first person’s position is at the stern of the boat and it called the “Coxswain” and faces forward.  All other rowers face backward.  The person next to the Cox is the “Stoke seat”.
+
+Set available dates and assign boats that are available to register for on that date.
+
+Admin screen - Reservations
+Admin should be able to display roster by upcoming date, boat, and registered rowers and their position on the boat that they selected during their seat selection process. 
+
+Admin screen should have a logout button. 
+
+
+Rower’s Reservation screen.
+After logging in, the rower should see upcoming dates and boats they already registered for previously or none of not registered for anything.
+
+To register, the rower should see upcoming available dates where there are still positions available on boats.  
+Once the select a date, a picture representing the available Sculls should appear and allow the rower to select an available boat and their position on the boat.   This should be graphical like selecting an airline seat on a plane.  Once they select a seat, a confirm button asks them to “Confirm selection” and they can press Yes or Cancel. 
+Once a scull is fully booked with rowers and every seat is filled, it should be grayed out and no other rowers can register for that boat. 
+
+For Octuple scull, the user should be able to select the Coxswain or Stoker position which are both the closest positions from the boat’s stern.   The Coxswain is first and the stoker is next.  A rower 
+
+
+Rowers Cancel Screen
+User can see the list of registered dates and boats and cancel button.  
+User can select cancel button and a confirmation dialog will pop-up asking to let the user know their registration will be cancelled and click ok to confirm of cancel to back out.
+
+User and admin can log out via log out button.  Application automatically logs them out after 15 minutes of inactivity. 
+
+Create sample data set of boats and registered users.
