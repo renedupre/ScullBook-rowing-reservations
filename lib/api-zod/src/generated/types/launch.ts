@@ -9,7 +9,7 @@ import type { Boat } from './boat';
 
 export interface Launch {
   id: number;
-  date: Date;
+  date: string;
   boat: Boat;
   bookedSeats: number;
   availableSeats: number;

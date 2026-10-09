@@ -7,6 +7,6 @@
  */
 
 export type ListRosterParams = {
-from?: Date;
-to?: Date;
+from?: string;
+to?: string;
 };

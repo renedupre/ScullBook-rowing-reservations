@@ -7,6 +7,6 @@
  */
 
 export interface LaunchInput {
-  date: Date;
+  date: string;
   boatId: number;
 }

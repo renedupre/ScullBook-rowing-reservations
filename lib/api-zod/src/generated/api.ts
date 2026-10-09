@@ -91,6 +91,12 @@ export const LogoutResponse = zod.void()
 
 
 /**
+ * @summary Renew the idle session after real user activity
+ */
+export const TouchSessionResponse = zod.void()
+
+
+/**
  * @summary Change the administrator password
  */
 
@@ -185,12 +191,12 @@ export const DeleteBoatResponse = zod.void()
  * @summary List upcoming available rowing sessions
  */
 export const ListLaunchesQueryParams = zod.object({
-  "from": zod.date().optional()
+  "from": zod.coerce.string().date().optional()
 })
 
 export const ListLaunchesResponseItem = zod.object({
   "id": zod.number().int(),
-  "date": zod.coerce.date(),
+  "date": zod.string().date(),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
@@ -208,13 +214,13 @@ export const ListLaunchesResponse = zod.array(ListLaunchesResponseItem)
  * @summary Schedule a boat for a rowing date
  */
 export const CreateLaunchBody = zod.object({
-  "date": zod.coerce.date(),
+  "date": zod.string().date(),
   "boatId": zod.number().int()
 })
 
 export const CreateLaunchResponse = zod.object({
   "id": zod.number().int(),
-  "date": zod.coerce.date(),
+  "date": zod.string().date(),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
@@ -259,7 +265,7 @@ export const GetLaunchSeatsResponse = zod.array(GetLaunchSeatsResponseItem)
 export const ListMyReservationsResponseItem = zod.object({
   "id": zod.number().int(),
   "launchId": zod.number().int(),
-  "date": zod.coerce.date(),
+  "date": zod.string().date(),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
@@ -287,7 +293,7 @@ export const ReserveSeatBody = zod.object({
 export const ReserveSeatResponse = zod.object({
   "id": zod.number().int(),
   "launchId": zod.number().int(),
-  "date": zod.coerce.date(),
+  "date": zod.string().date(),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
@@ -313,13 +319,13 @@ export const CancelReservationResponse = zod.void()
  * @summary List scheduled boat rosters
  */
 export const ListRosterQueryParams = zod.object({
-  "from": zod.date().optional(),
-  "to": zod.date().optional()
+  "from": zod.coerce.string().date().optional(),
+  "to": zod.coerce.string().date().optional()
 })
 
 export const ListRosterResponseItem = zod.object({
   "launchId": zod.number().int(),
-  "date": zod.coerce.date(),
+  "date": zod.string().date(),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
@@ -346,7 +352,7 @@ export const GetAdminSummaryResponse = zod.object({
   "reservationCount": zod.number().int(),
   "nextLaunches": zod.array(zod.object({
   "id": zod.number().int(),
-  "date": zod.coerce.date(),
+  "date": zod.string().date(),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),

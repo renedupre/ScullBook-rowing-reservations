@@ -7,5 +7,5 @@
  */
 
 export type ListLaunchesParams = {
-from?: Date;
+from?: string;
 };

@@ -471,6 +471,80 @@ export const useLogout = <TError = ErrorType<unknown>,
       return useMutation(getLogoutMutationOptions(options));
     }
 
+export const getTouchSessionUrl = () => {
+
+
+
+
+  return `/api/auth/activity`
+}
+
+/**
+ * @summary Renew the idle session after real user activity
+ */
+export const touchSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getTouchSessionUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getTouchSessionMutationKey = () => ['touchSession'] as const;
+
+export const getTouchSessionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof touchSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof touchSession>>, TError,void, TContext> => {
+
+const mutationKey = getTouchSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof touchSession>>, void> = () => {
+
+
+          return  touchSession(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TouchSessionMutationResult = NonNullable<Awaited<ReturnType<typeof touchSession>>>
+
+    export type TouchSessionMutationError = ErrorType<unknown>
+
+
+    /**
+ * @summary Renew the idle session after real user activity
+ */
+export const useTouchSession = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof touchSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof touchSession>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getTouchSessionMutationOptions(options));
+    }
+
 export const getChangePasswordUrl = () => {
 
 

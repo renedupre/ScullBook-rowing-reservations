@@ -1,10 +1,11 @@
-# [Project name]
+# ScullBook
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+ScullBook lets rowing club members reserve a specific scull seat and lets administrators configure boats, schedule rowing dates, and view crew rosters.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/scullbook run dev` — run the web app through its managed workflow
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -22,23 +23,36 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/scullbook/src/` — React pages, authentication dialogs, graphical seat picker, and styles
+- `artifacts/api-server/src/routes/` — account, boat, launch, and reservation endpoints
+- `artifacts/api-server/src/lib/` — secure authentication, rowing rules, and initial example data
+- `lib/db/src/schema/` — PostgreSQL schema
+- `lib/api-spec/openapi.yaml` — API contract; regenerate clients after changes
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Local email/password accounts are intentional: the requested administrator must sign in using the literal ID `admin`, and the spec requires locally registered rower accounts.
+- Passwords are hashed with salted scrypt despite the source spec allowing plaintext. Never return password hashes or readable passwords through the API.
+- Calendar dates remain `YYYY-MM-DD` strings throughout the system. Upcoming-date boundaries use America/Los_Angeles until the club requests a configurable timezone.
+- Unique reservation constraints and transaction locks prevent conflicting seat bookings.
+- Initial data is added only when the administrator account does not exist. Restarting must never reset an existing password or reseed deleted fleet data.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Splash page, registration/login dialogs, rower dashboard, boat seat selection and confirmation, and reservation cancellation.
+- Administrator overview, fleet configuration, date/boat scheduling, upcoming crew rosters, and password changes.
+- Both roles can log out; 15-minute idle expiry runs in the browser and on the server, with input-driven session renewal.
+- Four boat types: Single (1), Double (2), Quadruple (4), and Octuple (9 occupants including a coxswain).
+- Octuple position 1 is the stern Coxswain facing forward. Position 2 is Stroke (the source spec also calls it Stoke/Stoker); the other rowers face backward.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+Follow the supplied ScullBook specification. Include sample boats and registered rowers. Initial administrator ID is `admin`; administrators must be able to change their password. Do not expand the product beyond the requested reservation workflows without approval.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Seeded accounts and the initial administrator password are for setup/demo use; change the administrator password before real club use.
+- Scheduled boats cannot change type until their sessions are removed. Booked sessions cannot be removed until their rowers cancel.
 
 ## Pointers
 

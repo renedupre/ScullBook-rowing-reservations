@@ -10,7 +10,7 @@ import type { Seat } from './seat';
 
 export interface RosterEntry {
   launchId: number;
-  date: Date;
+  date: string;
   boat: Boat;
   seats: Seat[];
 }

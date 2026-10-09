@@ -88,6 +88,14 @@ paths:
       responses:
         "204":
           description: Signed out
+  /auth/activity:
+    post:
+      operationId: touchSession
+      tags: [auth]
+      summary: Renew the idle session after real user activity
+      responses:
+        "204":
+          description: Session renewed
   /auth/change-password:
     post:
       operationId: changePassword
