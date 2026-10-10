@@ -7,6 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import { Shell } from "@/components/shell";
 import { Confirm } from "@/components/confirm";
+import { AdminCrewDialog } from "@/components/admin-crew-dialog";
 import { WeeklySeatChart } from "@/components/weekly-seat-chart";
 import { aggregateWeek, currentLaWeekStart, filterByDay, shiftWeek, weekStartOf } from "@/lib/overview";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ function Overview() {
   const s = useGetAdminSummary({ query: { queryKey: getGetAdminSummaryQueryKey(), refetchInterval: 10000 } });
   const [weekStart, setWeekStart] = useState(() => currentLaWeekStart());
   const [day, setDay] = useState<string | null>(null);
+  const [crew, setCrew] = useState<Launch | null>(null);
   const goWeek = (w: string) => { setWeekStart(w); setDay(null); };
   if (s.isLoading) return <Skeleton className="h-40 w-full" />;
   if (s.isError) return <p className="text-sm text-destructive">{errMsg(s.error)} <Button size="sm" variant="outline" onClick={() => s.refetch()}>Retry</Button></p>;
@@ -74,10 +76,12 @@ function Overview() {
             </TableHeader>
             <TableBody>
               {shown.map((l) => (
-                <TableRow key={l.id} data-testid={"row-next-" + l.id}>
+                <TableRow key={l.id} data-testid={"row-next-" + l.id} className="cursor-pointer" onClick={() => setCrew(l)}>
                   <TableCell className="whitespace-nowrap">{fmtDate(l.date)}</TableCell>
                   <TableCell className="whitespace-nowrap">{fmtShift(l.shift)}</TableCell>
-                  <TableCell className="font-medium">{l.boat.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <button type="button" className="text-left underline-offset-4 hover:underline focus-visible:underline" onClick={(e) => { e.stopPropagation(); setCrew(l); }} aria-label={`Manage crew for ${l.boat.name}, ${fmtDate(l.date)}, ${fmtShift(l.shift)}`} data-testid={"button-crew-" + l.id}>{l.boat.name}</button>
+                  </TableCell>
                   <TableCell className="whitespace-nowrap text-right text-muted-foreground" aria-label={`${l.bookedSeats} booked out of ${l.boat.seats} seats`}>{l.bookedSeats}/{l.boat.seats}</TableCell>
                 </TableRow>
               ))}
@@ -85,6 +89,7 @@ function Overview() {
           </Table>
         </div>
       </div>
+      <AdminCrewDialog launch={crew} onClose={() => setCrew(null)} />
     </div>
   );
 }

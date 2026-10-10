@@ -138,6 +138,28 @@ export interface Seat {
   occupied: boolean;
   /** @nullable */
   rowerName?: string | null;
+  /**
+     * Included only for administrator seat management.
+     * @nullable
+     */
+  reservationId?: number | null;
+}
+
+export interface SeatSwapInput {
+  /** @minimum 1 */
+  firstReservationId: number;
+  /**
+     * @minimum 1
+     * @maximum 9
+     */
+  firstPosition: number;
+  /** @minimum 1 */
+  secondReservationId: number;
+  /**
+     * @minimum 1
+     * @maximum 9
+     */
+  secondPosition: number;
 }
 
 export interface Reservation {
@@ -177,6 +199,15 @@ export interface AdminSummary {
 
 export type ListLaunchesParams = {
 from?: string;
+};
+
+export type CancelReservationParams = {
+/**
+ * Reject cancellation if the reservation has moved since seat selection.
+ * @minimum 1
+ * @maximum 9
+ */
+expectedPosition?: number;
 };
 
 export type ListRosterParams = {

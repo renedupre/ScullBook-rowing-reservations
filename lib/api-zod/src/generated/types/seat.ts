@@ -12,4 +12,9 @@ export interface Seat {
   occupied: boolean;
   /** @nullable */
   rowerName?: string | null;
+  /**
+     * Included only for administrator seat management.
+     * @nullable
+     */
+  reservationId?: number | null;
 }

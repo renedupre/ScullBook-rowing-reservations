@@ -25,16 +25,17 @@ export async function launchById(id: number) {
     .innerJoin(boatsTable, eq(launchesTable.boatId, boatsTable.id)).where(eq(launchesTable.id, id));
   return record;
 }
-export async function seatsForLaunch(id: number) {
+export async function seatsForLaunch(id: number, includeReservationIds = false) {
   const record = await launchById(id);
   if (!record) return null;
-  const booked = await db.select({ position: reservationsTable.position, firstName: usersTable.firstName, lastName: usersTable.lastName })
+  const booked = await db.select({ reservationId: reservationsTable.id, position: reservationsTable.position, firstName: usersTable.firstName, lastName: usersTable.lastName })
     .from(reservationsTable).innerJoin(usersTable, eq(reservationsTable.userId, usersTable.id)).where(eq(reservationsTable.launchId, id));
   return Array.from({ length: record.boat.seats }, (_, index) => {
     const position = index + 1;
     const occupant = booked.find((row) => row.position === position);
     return { position, label: seatLabel(record.boat.type, position, record.boat.seats), occupied: !!occupant,
-      rowerName: occupant ? `${occupant.firstName} ${occupant.lastName}` : null };
+      rowerName: occupant ? `${occupant.firstName} ${occupant.lastName}` : null,
+      ...(includeReservationIds ? { reservationId: occupant?.reservationId ?? null } : {}) };
   });
 }
 export async function reservationById(id: number) {

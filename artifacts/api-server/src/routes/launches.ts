@@ -42,7 +42,7 @@ router.delete("/launches/:launchId", requireAdmin, async (req, res): Promise<voi
 router.get("/launches/:launchId/seats", async (req, res): Promise<void> => {
   const params = GetLaunchSeatsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: "Invalid session ID." }); return; }
-  const seats = await seatsForLaunch(params.data.launchId);
+  const seats = await seatsForLaunch(params.data.launchId, res.locals.user.role === "admin");
   if (!seats) { res.status(404).json({ error: "Session not found." }); return; }
   res.json(GetLaunchSeatsResponse.parse(seats));
 });

@@ -262,7 +262,8 @@ export const GetLaunchSeatsResponseItem = zod.object({
   "position": zod.number().int(),
   "label": zod.string(),
   "occupied": zod.boolean(),
-  "rowerName": zod.string().nullish()
+  "rowerName": zod.string().nullish(),
+  "reservationId": zod.number().int().nullish().describe('Included only for administrator seat management.')
 })
 export const GetLaunchSeatsResponse = zod.array(GetLaunchSeatsResponseItem)
 
@@ -322,7 +323,47 @@ export const CancelReservationParams = zod.object({
   "reservationId": zod.coerce.number().int()
 })
 
+export const cancelReservationQueryExpectedPositionMax = 9;
+
+
+
+export const CancelReservationQueryParams = zod.object({
+  "expectedPosition": zod.coerce.number().int().min(1).max(cancelReservationQueryExpectedPositionMax).optional().describe('Reject cancellation if the reservation has moved since seat selection.')
+})
+
 export const CancelReservationResponse = zod.void()
+
+
+/**
+ * @summary Atomically swap two occupied seats on the same boat shift (admin only)
+ */
+export const SwapSeatsParams = zod.object({
+  "launchId": zod.coerce.number().int()
+})
+
+
+export const swapSeatsBodyFirstPositionMax = 9;
+
+
+export const swapSeatsBodySecondPositionMax = 9;
+
+
+
+export const SwapSeatsBody = zod.object({
+  "firstReservationId": zod.number().int().min(1),
+  "firstPosition": zod.number().int().min(1).max(swapSeatsBodyFirstPositionMax),
+  "secondReservationId": zod.number().int().min(1),
+  "secondPosition": zod.number().int().min(1).max(swapSeatsBodySecondPositionMax)
+})
+
+export const SwapSeatsResponseItem = zod.object({
+  "position": zod.number().int(),
+  "label": zod.string(),
+  "occupied": zod.boolean(),
+  "rowerName": zod.string().nullish(),
+  "reservationId": zod.number().int().nullish().describe('Included only for administrator seat management.')
+})
+export const SwapSeatsResponse = zod.array(SwapSeatsResponseItem)
 
 
 /**
@@ -347,7 +388,8 @@ export const ListRosterResponseItem = zod.object({
   "position": zod.number().int(),
   "label": zod.string(),
   "occupied": zod.boolean(),
-  "rowerName": zod.string().nullish()
+  "rowerName": zod.string().nullish(),
+  "reservationId": zod.number().int().nullish().describe('Included only for administrator seat management.')
 }))
 })
 export const ListRosterResponse = zod.array(ListRosterResponseItem)
