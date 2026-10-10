@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CAPACITY, errMsg, fmtDate, fmtShift, passwordProblems, useRefreshData } from "@/lib/util";
 
 const TYPES = Object.keys(CAPACITY) as BoatInput["type"][];
@@ -58,17 +59,31 @@ function Overview() {
         onReset={() => { setDay(null); setWeekStart(currentLaWeekStart()); }}
       />
       <div>
-        <h3 className="font-serif text-2xl">Next on the water</h3>
+        <h3 id="next-on-the-water-heading" className="font-serif text-2xl">Next on the water</h3>
         {all.length === 0 && <p className="mt-2 text-muted-foreground">Nothing scheduled.</p>}
         {all.length > 0 && shown.length === 0 && <p className="mt-2 text-muted-foreground" data-testid="text-day-empty">No outings on this day.</p>}
-        <ul className="mt-3 divide-y divide-border">
-          {shown.map((l) => (
-            <li key={l.id} className="flex justify-between py-3" data-testid={"row-next-" + l.id}>
-              <span>{fmtDate(l.date)} / {fmtShift(l.shift)} / {l.boat.name}</span>
-              <span className="text-muted-foreground">{l.bookedSeats}/{l.boat.seats} seats</span>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-3 rounded-lg border border-border bg-card">
+          <Table aria-labelledby="next-on-the-water-heading" data-testid="table-next-on-the-water">
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead scope="col">Date</TableHead>
+                <TableHead scope="col">Time</TableHead>
+                <TableHead scope="col">Boat Name</TableHead>
+                <TableHead scope="col" className="text-right">Seats</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {shown.map((l) => (
+                <TableRow key={l.id} data-testid={"row-next-" + l.id}>
+                  <TableCell className="whitespace-nowrap">{fmtDate(l.date)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{fmtShift(l.shift)}</TableCell>
+                  <TableCell className="font-medium">{l.boat.name}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right text-muted-foreground" aria-label={`${l.bookedSeats} booked out of ${l.boat.seats} seats`}>{l.bookedSeats}/{l.boat.seats}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
