@@ -181,6 +181,24 @@ export interface ReservationInput {
   position: number;
 }
 
+export interface RowerReservationInput {
+  /** @minimum 1 */
+  launchId: number;
+  /**
+     * @minimum 1
+     * @maximum 9
+     */
+  position: number;
+  /** @minimum 1 */
+  userId: number;
+}
+
+export interface RowerOption {
+  id: number;
+  firstName: string;
+  lastName: string;
+}
+
 export interface RosterEntry {
   launchId: number;
   date: string;
@@ -199,6 +217,13 @@ export interface AdminSummary {
 
 export type ListLaunchesParams = {
 from?: string;
+};
+
+export type SearchRowersParams = {
+/**
+ * @maxLength 100
+ */
+q?: string;
 };
 
 export type CancelReservationParams = {

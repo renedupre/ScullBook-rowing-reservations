@@ -44,6 +44,7 @@ ScullBook lets rowing club members reserve a specific scull seat and lets admini
 - Boats can be offered in either or both four-hour shifts: 8am–12pm and 1pm–5pm. A rower can reserve one boat per date/shift, including both shifts on the same day.
 - Admin Overview has a weekly booked/available seat chart, summing all boats and both shifts by date. Selecting a day filters Next on the water; reset restores all upcoming outings.
 - Admins can open an Overview outing's graphical crew map, cancel one occupied seat, or swap two occupied seats within that same outing. Both changes require confirmation and preserve unrelated bookings.
+- Admins can select an open seat, click Reserve, search registered rowers by first or last name in a scrollable pick list, and click a name to book that seat. The normal one-boat-per-date/shift rule also applies to admin bookings.
 - Seat occupants' names are visible to every signed-in user, including the rower's own name and crew on full boats. Never expose account emails or authentication data in crew views.
 - Both roles can log out; 15-minute idle expiry runs in the browser and on the server, with input-driven session renewal.
 - Four boat types: Single (1), Double (2), Quadruple (4), and Octuple (9 occupants including a coxswain).

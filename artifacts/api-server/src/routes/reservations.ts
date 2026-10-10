@@ -1,9 +1,11 @@
 import { Router } from "express";
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq, gte, or, ilike, asc, sql } from "drizzle-orm";
 import { db, boatsTable, launchesTable, reservationsTable, usersTable } from "@workspace/db";
 import { ListMyReservationsResponse, ReserveSeatBody, ReserveSeatResponse, CancelReservationParams, CancelReservationQueryParams, ListRosterQueryParams, ListRosterResponse, GetAdminSummaryResponse, SwapSeatsParams, SwapSeatsBody, SwapSeatsResponse } from "@workspace/api-zod";
 import { requireUser, requireAdmin } from "../lib/auth";
 import { launchList, reservationById, seatsForLaunch, seatLabel, today } from "../lib/rowing";
+import { AdminReserveSeatBody, AdminReserveSeatResponse, SearchRowersQueryParams, SearchRowersResponse } from "@workspace/api-zod";
+import { bookSeat } from "../lib/booking";
 const router = Router();
 router.use("/reservations", requireUser);
 router.use("/admin", requireUser, requireAdmin);
@@ -21,26 +23,31 @@ router.post("/reservations", async (req, res): Promise<void> => {
   const parsed = ReserveSeatBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Choose a valid session and seat." }); return; }
   if (res.locals.user.role !== "rower") { res.status(403).json({ error: "Only rower accounts can reserve seats." }); return; }
-  const result = await db.transaction(async (tx) => {
-    // Lock the rower before the launch: two simultaneous requests for different
-    // boats must not both pass the same date/shift conflict check.
-    await tx.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.id, res.locals.user.id)).for("update");
-    const [launch] = await tx.select().from(launchesTable).where(eq(launchesTable.id, parsed.data.launchId)).for("update");
-    if (!launch) return { status: 404, error: "Session not found." };
-    if (launch.date < today()) return { status: 400, error: "This rowing date is in the past." };
-    const [boat] = await tx.select().from(boatsTable).where(eq(boatsTable.id, launch.boatId)).for("share");
-    if (parsed.data.position > boat.seats) return { status: 400, error: "That seat does not exist on this boat." };
-    const conflict = await tx.select({ id: reservationsTable.id }).from(reservationsTable)
-      .innerJoin(launchesTable, eq(reservationsTable.launchId, launchesTable.id))
-      .where(and(eq(reservationsTable.userId, res.locals.user.id), eq(launchesTable.date, launch.date), eq(launchesTable.shift, launch.shift)));
-    if (conflict.length) return { status: 409, error: `You already have a boat booked for ${launch.shift === "08:00" ? "8am" : "1pm"} on this date. Cancel that seat before booking another boat in this shift.` };
-    const existing = await tx.select().from(reservationsTable).where(eq(reservationsTable.launchId, launch.id));
-    if (existing.some((r) => r.position === parsed.data.position)) return { status: 409, error: "That seat was just booked. Please select another available seat." };
-    const [reservation] = await tx.insert(reservationsTable).values({ ...parsed.data, userId: res.locals.user.id }).returning();
-    return { id: reservation.id };
-  });
+  const result = await bookSeat({ ...parsed.data, userId: res.locals.user.id }, true);
   if (result.error) { res.status(result.status!).json({ error: result.error }); return; }
   res.status(201).json(ReserveSeatResponse.parse(await reservationById(result.id!)));
+});
+router.get("/admin/rowers", async (req, res): Promise<void> => {
+  const query = SearchRowersQueryParams.safeParse(req.query);
+  if (!query.success) { res.status(400).json({ error: "Enter a name of up to 100 characters." }); return; }
+  const term = (query.data.q ?? "").trim().replace(/\s+/g, " ");
+  const pattern = `%${term.replace(/[\\%_]/g, "\\$&")}%`;
+  const matches = term ? or(
+    ilike(usersTable.firstName, pattern),
+    ilike(usersTable.lastName, pattern),
+    ilike(sql<string>`${usersTable.firstName} || ' ' || ${usersTable.lastName}`, pattern),
+  ) : undefined;
+  const rowers = await db.select({ id: usersTable.id, firstName: usersTable.firstName, lastName: usersTable.lastName })
+    .from(usersTable).where(and(eq(usersTable.role, "rower"), matches))
+    .orderBy(asc(usersTable.lastName), asc(usersTable.firstName), asc(usersTable.id));
+  res.json(SearchRowersResponse.parse(rowers));
+});
+router.post("/admin/reservations", async (req, res): Promise<void> => {
+  const parsed = AdminReserveSeatBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Choose a valid seat and registered rower." }); return; }
+  const result = await bookSeat(parsed.data);
+  if (result.error) { res.status(result.status!).json({ error: result.error }); return; }
+  res.status(201).json(AdminReserveSeatResponse.parse(await reservationById(result.id!)));
 });
 router.delete("/reservations/:reservationId", async (req, res): Promise<void> => {
   const params = CancelReservationParams.safeParse(req.params);

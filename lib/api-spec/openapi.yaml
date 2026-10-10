@@ -283,6 +283,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Reservation"
+  /admin/rowers:
+    get:
+      operationId: searchRowers
+      tags: [admin]
+      summary: Search registered rowers by first or last name
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string, maxLength: 100 }
+      responses:
+        "200":
+          description: Matching registered rowers, ordered by name
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RowerOption" }
+  /admin/reservations:
+    post:
+      operationId: adminReserveSeat
+      tags: [admin]
+      summary: Reserve an open seat for a registered rower
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RowerReservationInput" }
+      responses:
+        "201":
+          description: Seat reserved for the selected rower
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "403": { description: Administrator required }
+        "409": { description: Seat occupied or rower already booked in this shift }
   /reservations/{reservationId}:
     delete:
       operationId: cancelReservation
@@ -500,6 +535,20 @@ components:
       properties:
         launchId: { type: integer }
         position: { type: integer, minimum: 1, maximum: 9 }
+    RowerReservationInput:
+      type: object
+      required: [launchId, position, userId]
+      properties:
+        launchId: { type: integer, minimum: 1 }
+        position: { type: integer, minimum: 1, maximum: 9 }
+        userId: { type: integer, minimum: 1 }
+    RowerOption:
+      type: object
+      required: [id, firstName, lastName]
+      properties:
+        id: { type: integer }
+        firstName: { type: string }
+        lastName: { type: string }
     RosterEntry:
       type: object
       required: [launchId, date, shift, boat, seats]

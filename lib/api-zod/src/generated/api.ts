@@ -317,6 +317,56 @@ export const ReserveSeatResponse = zod.object({
 
 
 /**
+ * @summary Search registered rowers by first or last name
+ */
+export const searchRowersQueryQMax = 100;
+
+
+
+export const SearchRowersQueryParams = zod.object({
+  "q": zod.coerce.string().max(searchRowersQueryQMax).optional()
+})
+
+export const SearchRowersResponseItem = zod.object({
+  "id": zod.number().int(),
+  "firstName": zod.string(),
+  "lastName": zod.string()
+})
+export const SearchRowersResponse = zod.array(SearchRowersResponseItem)
+
+
+/**
+ * @summary Reserve an open seat for a registered rower
+ */
+
+export const adminReserveSeatBodyPositionMax = 9;
+
+
+
+
+export const AdminReserveSeatBody = zod.object({
+  "launchId": zod.number().int().min(1),
+  "position": zod.number().int().min(1).max(adminReserveSeatBodyPositionMax),
+  "userId": zod.number().int().min(1)
+})
+
+export const AdminReserveSeatResponse = zod.object({
+  "id": zod.number().int(),
+  "launchId": zod.number().int(),
+  "date": zod.string().date(),
+  "shift": zod.enum(['08:00', '13:00']),
+  "boat": zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "type": zod.enum(['Single Scull', 'Double Scull', 'Quadruple Scull', 'Octuple Scull']),
+  "seats": zod.number().int()
+}),
+  "position": zod.number().int(),
+  "seatLabel": zod.string()
+})
+
+
+/**
  * @summary Cancel a reservation
  */
 export const CancelReservationParams = zod.object({

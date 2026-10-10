@@ -35,6 +35,9 @@ import type {
   Reservation,
   ReservationInput,
   RosterEntry,
+  RowerOption,
+  RowerReservationInput,
+  SearchRowersParams,
   Seat,
   SeatSwapInput,
   SessionResponse,
@@ -1449,6 +1452,178 @@ export const useReserveSeat = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getReserveSeatMutationOptions(options));
+    }
+
+export const getSearchRowersUrl = (params?: SearchRowersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/rowers?${stringifiedParams}` : `/api/admin/rowers`
+}
+
+/**
+ * @summary Search registered rowers by first or last name
+ */
+export const searchRowers = async (params?: SearchRowersParams, options?: Parameters<typeof customFetch>[1]): Promise<RowerOption[]> => {
+
+  return customFetch<RowerOption[]>(getSearchRowersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchRowersQueryKey = (params?: SearchRowersParams,) => {
+    return [
+    `/api/admin/rowers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchRowersQueryOptions = <TData = Awaited<ReturnType<typeof searchRowers>>, TError = ErrorType<unknown>>(params?: SearchRowersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchRowers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchRowersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchRowers>>> = ({ signal }) => searchRowers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchRowers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchRowersQueryResult = NonNullable<Awaited<ReturnType<typeof searchRowers>>>
+export type SearchRowersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Search registered rowers by first or last name
+ */
+
+export function useSearchRowers<TData = Awaited<ReturnType<typeof searchRowers>>, TError = ErrorType<unknown>>(
+ params?: SearchRowersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchRowers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchRowersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminReserveSeatUrl = () => {
+
+
+
+
+  return `/api/admin/reservations`
+}
+
+/**
+ * @summary Reserve an open seat for a registered rower
+ */
+export const adminReserveSeat = async (rowerReservationInput: RowerReservationInput, options?: Parameters<typeof customFetch>[1]): Promise<Reservation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Reservation>(getAdminReserveSeatUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(rowerReservationInput)
+  }
+);}
+
+
+
+
+
+export const getAdminReserveSeatMutationKey = () => ['adminReserveSeat'] as const;
+
+export const getAdminReserveSeatMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminReserveSeat>>, TError,AdminReserveSeatMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminReserveSeat>>, TError,AdminReserveSeatMutationVariables, TContext> => {
+
+const mutationKey = getAdminReserveSeatMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminReserveSeat>>, AdminReserveSeatMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminReserveSeat(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminReserveSeatMutationResult = NonNullable<Awaited<ReturnType<typeof adminReserveSeat>>>
+    export type AdminReserveSeatMutationBody = BodyType<RowerReservationInput>
+    export type AdminReserveSeatMutationError = ErrorType<void>
+    export type AdminReserveSeatMutationVariables = {data: BodyType<RowerReservationInput>}
+
+    /**
+ * @summary Reserve an open seat for a registered rower
+ */
+export const useAdminReserveSeat = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminReserveSeat>>, TError,AdminReserveSeatMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminReserveSeat>>,
+        TError,
+        AdminReserveSeatMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAdminReserveSeatMutationOptions(options));
     }
 
 export const getCancelReservationUrl = (reservationId: number,

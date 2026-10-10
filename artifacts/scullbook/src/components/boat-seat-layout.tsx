@@ -21,11 +21,9 @@ export function BoatSeatLayout({ seats, octuple, variant = "rower", isDisabled, 
           const isSel = isSelected(s);
           const admin = variant === "admin";
           const look = admin
-            ? (!s.occupied
-              ? "stripe cursor-not-allowed border-border bg-muted text-muted-foreground"
-              : isSel
-                ? "-translate-y-1 scale-105 border-accent bg-accent text-accent-foreground"
-                : "border-primary bg-card text-primary hover:-translate-y-1")
+            ? (isSel
+              ? "-translate-y-1 scale-105 border-accent bg-accent text-accent-foreground"
+              : "border-primary bg-card text-primary hover:-translate-y-1")
             : (s.occupied
               ? "stripe cursor-not-allowed border-border bg-muted text-muted-foreground"
               : isSel
