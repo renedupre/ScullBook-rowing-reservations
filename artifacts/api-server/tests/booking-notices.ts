@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
 import { eq, inArray } from "drizzle-orm";
 import { db, pool, boatsTable, launchesTable, reservationsTable, usersTable, sessionsTable, noticesTable } from "@workspace/db";
+import { checkConcurrentBookingNotices } from "./booking-notice-concurrency";
 
 // Run against the development workflows:
 // pnpm --filter @workspace/scripts exec tsx ../artifacts/api-server/tests/booking-notices.ts
 // Only disposable fixture accounts/boats are changed; no existing club data.
+// Temporarily installs a fixture-recipient-only failure trigger (cleaned up in
+// finally). Requires development DB DDL permissions; never run on production.
 const prefix = `notice-test-${Date.now()}-${randomBytes(4).toString("hex")}`;
 const userIds: number[] = [];
 let boatId: number | undefined;
@@ -17,12 +20,16 @@ async function request(path: string, token?: string, method = "GET", body?: unkn
     method,
     headers: { ...(token ? { Cookie: `scullbook_session=${token}` } : {}), ...(body ? { "Content-Type": "application/json" } : {}) },
     body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(15000),
   });
   const data = response.status === 204 ? null : await response.json();
   return { status: response.status, data };
 }
 
 try {
+  // Fail before creating fixtures when the documented notice migration has
+  // not been applied, rather than masking that error during cleanup.
+  await db.select({ id: noticesTable.id }).from(noticesTable).limit(0);
   const accounts = await db.insert(usersTable).values(["admin", "rower", "rower", "rower"].map((role, i) => ({
     login: `${prefix}-${i}@example.test`, firstName: "Notice", lastName: `Fixture${i}`, role, passwordHash: "unusable-test-hash",
   }))).returning();
@@ -110,14 +117,17 @@ try {
   assert.equal(unchanged.userId, accounts[2].id);
   assert.equal(unchanged.position, 1);
 
+  await checkConcurrentBookingNotices({ boatId: boat.id, boatName: prefix, userIds, tokens, request });
+
   // Notices survive removal of the now-unbooked outing and boat.
   await db.delete(reservationsTable).where(eq(reservationsTable.launchId, launch.id));
   await db.delete(launchesTable).where(eq(launchesTable.id, launch.id));
   await db.delete(boatsTable).where(eq(boatsTable.id, boat.id));
-  assert.equal((await list(1)).length, 2);
-  assert.equal((await list(1))[0].boatName, prefix);
-  assert.equal((await list(1))[1].readAt, read.data.readAt);
-  console.info("Booking notice integration checks passed: recipients, failures, seat snapshots, read persistence, and deletion survival.");
+  const surviving = (await list(1)).filter((notice: any) => notice.date === "2099-10-12");
+  assert.equal(surviving.length, 2);
+  assert.equal(surviving[0].boatName, prefix);
+  assert.equal(surviving[1].readAt, read.data.readAt);
+  console.info("Booking notice integration checks passed: recipients, failures, seat snapshots, read persistence, deletion survival, concurrent changes, rollback, and retry deduplication.");
 } finally {
   if (launchId) {
     await db.delete(reservationsTable).where(eq(reservationsTable.launchId, launchId));

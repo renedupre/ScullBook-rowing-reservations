@@ -10,7 +10,7 @@ ScullBook lets rowing club members reserve a specific scull seat and lets admini
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/scripts exec tsx ../artifacts/api-server/tests/booking-notices.ts` — check private notice delivery, failed changes, and read persistence against running dev workflows using disposable fixtures
+- `pnpm --filter @workspace/scripts exec tsx ../artifacts/api-server/tests/booking-notices.ts` — check private notice delivery, read persistence, simultaneous cancellations/swaps, notice-insert rollback, and retry deduplication against the running dev API using disposable fixtures. Requires development DB DDL permissions for a temporary fixture-only failure trigger; never run on production.
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
