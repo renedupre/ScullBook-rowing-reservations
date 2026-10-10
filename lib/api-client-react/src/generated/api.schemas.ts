@@ -104,9 +104,18 @@ export interface BoatInput {
   seats: number;
 }
 
+export type Shift = typeof Shift[keyof typeof Shift];
+
+
+export const Shift = {
+  '08:00': '08:00',
+  '13:00': '13:00',
+} as const;
+
 export interface Launch {
   id: number;
   date: string;
+  shift: Shift;
   boat: Boat;
   bookedSeats: number;
   availableSeats: number;
@@ -116,6 +125,11 @@ export interface Launch {
 export interface LaunchInput {
   date: string;
   boatId: number;
+  /**
+     * @minItems 1
+     * @maxItems 2
+     */
+  shifts: Shift[];
 }
 
 export interface Seat {
@@ -130,6 +144,7 @@ export interface Reservation {
   id: number;
   launchId: number;
   date: string;
+  shift: Shift;
   boat: Boat;
   position: number;
   seatLabel: string;
@@ -147,6 +162,7 @@ export interface ReservationInput {
 export interface RosterEntry {
   launchId: number;
   date: string;
+  shift: Shift;
   boat: Boat;
   seats: Seat[];
 }

@@ -7,10 +7,12 @@
  */
 import type { Boat } from './boat';
 import type { Seat } from './seat';
+import type { Shift } from './shift';
 
 export interface RosterEntry {
   launchId: number;
   date: string;
+  shift: Shift;
   boat: Boat;
   seats: Seat[];
 }

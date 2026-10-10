@@ -24,5 +24,6 @@ export * from './reservationInput';
 export * from './rosterEntry';
 export * from './seat';
 export * from './sessionResponse';
+export * from './shift';
 export * from './user';
 export * from './userRole';

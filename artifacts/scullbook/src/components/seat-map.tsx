@@ -5,11 +5,13 @@ import {
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { errMsg, fmtDate, useRefreshData } from "@/lib/util";
+import { errMsg, fmtDate, fmtShift, useRefreshData } from "@/lib/util";
 
-export function SeatMap({ launch, onDone }: { launch: Launch; onDone: () => void }) {
+export function SeatMap({ launch, onDone, canReserve = true, bookingNotice }: {
+  launch: Launch; onDone: () => void; canReserve?: boolean; bookingNotice?: string;
+}) {
   const q = useGetLaunchSeats(launch.id, {
-    query: { enabled: true, queryKey: getGetLaunchSeatsQueryKey(launch.id), staleTime: 5000, refetchOnMount: "always" },
+    query: { enabled: true, queryKey: getGetLaunchSeatsQueryKey(launch.id), staleTime: 5000, refetchOnMount: "always", refetchInterval: 10000 },
   });
   const [sel, setSel] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -17,12 +19,12 @@ export function SeatMap({ launch, onDone }: { launch: Launch; onDone: () => void
   const refresh = useRefreshData();
   const octuple = launch.boat.type === "Octuple Scull";
   const seats = [...(q.data ?? [])].sort((a, b) => a.position - b.position);
-  const chosen = seats.find((s) => s.position === sel);
+  const chosen = canReserve ? seats.find((s) => s.position === sel && !s.occupied) : undefined;
 
   const confirm = () => {
-    if (sel == null) return;
+    if (!chosen || !canReserve) return;
     setError(null);
-    reserve.mutate({ data: { launchId: launch.id, position: sel } }, {
+    reserve.mutate({ data: { launchId: launch.id, position: chosen.position } }, {
       onSuccess: () => { refresh(); onDone(); },
       onError: (e) => { setError(errMsg(e)); setSel(null); refresh(); },
     });
@@ -31,8 +33,9 @@ export function SeatMap({ launch, onDone }: { launch: Launch; onDone: () => void
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
-        {launch.boat.name} / {launch.boat.type} / {fmtDate(launch.date)}
+        {launch.boat.name} / {launch.boat.type} / {fmtDate(launch.date)} / {fmtShift(launch.shift)}
       </p>
+      {bookingNotice && <p className="rounded-md bg-secondary px-3 py-2 text-sm" data-testid="text-booking-notice">{bookingNotice}</p>}
       {q.isLoading && <Skeleton className="h-36 w-full" />}
       {q.isError && (
         <div className="space-y-2 text-sm text-destructive" role="alert">
@@ -54,13 +57,14 @@ export function SeatMap({ launch, onDone }: { launch: Launch; onDone: () => void
                 <button
                   key={s.position}
                   type="button"
-                  disabled={s.occupied}
+                  disabled={s.occupied || !canReserve || reserve.isPending}
                   onClick={() => { setSel(s.position); setError(null); }}
                   title={s.occupied ? (s.rowerName ?? "Taken") : s.label}
+                  aria-label={`Seat ${s.position}, ${s.label}: ${s.occupied ? s.rowerName ?? "Occupied" : "Available"}`}
                   aria-pressed={isSel}
                   data-testid={"seat-" + s.position}
                   style={{ animationDelay: i * 40 + "ms" }}
-                  className={"rise relative z-10 flex h-24 w-[4.5rem] flex-col items-center justify-between rounded-xl border-2 px-1 py-2 text-center transition-transform duration-200 " +
+                  className={"rise relative z-10 flex min-h-32 w-24 flex-col items-center justify-between gap-1 rounded-xl border-2 px-1 py-2 text-center transition-transform duration-200 disabled:cursor-not-allowed " +
                     (s.occupied
                       ? "stripe cursor-not-allowed border-border bg-muted text-muted-foreground"
                       : isSel
@@ -70,13 +74,13 @@ export function SeatMap({ launch, onDone }: { launch: Launch; onDone: () => void
                   <span className="font-serif text-lg leading-none">{s.position}</span>
                   <Dir className="h-4 w-4" aria-hidden />
                   <span className="text-[10px] font-medium leading-tight">{s.label}</span>
-                  {s.occupied && <span className="sr-only">occupied</span>}
+                  <span className="w-full break-words text-xs font-medium leading-tight" data-testid={"seat-name-" + s.position}>{s.occupied ? s.rowerName : "Open"}</span>
                 </button>
               );
             })}
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {octuple ? "Coxswain faces the bow; every rower faces the stern." : "All rowers face the stern."} Hatched seats are taken.
+            {octuple ? "Coxswain faces the bow; every rower faces the stern." : "All rowers face the stern."} Hatched seats are taken. Names are visible to all signed-in users.
           </p>
         </div>
       )}

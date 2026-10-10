@@ -11,9 +11,9 @@ router.get("/reservations", async (_req, res) => {
   const rows = await db.select({ reservation: reservationsTable, launch: launchesTable, boat: boatsTable }).from(reservationsTable)
     .innerJoin(launchesTable, eq(reservationsTable.launchId, launchesTable.id))
     .innerJoin(boatsTable, eq(launchesTable.boatId, boatsTable.id))
-    .where(and(eq(reservationsTable.userId, res.locals.user.id), gte(launchesTable.date, today()))).orderBy(launchesTable.date);
+    .where(and(eq(reservationsTable.userId, res.locals.user.id), gte(launchesTable.date, today()))).orderBy(launchesTable.date, launchesTable.shift);
   res.json(ListMyReservationsResponse.parse(rows.map(({ reservation, launch, boat }) => ({
-    id: reservation.id, launchId: launch.id, date: launch.date, boat, position: reservation.position,
+    id: reservation.id, launchId: launch.id, date: launch.date, shift: launch.shift, boat, position: reservation.position,
     seatLabel: seatLabel(boat.type, reservation.position, boat.seats),
   }))));
 });
@@ -22,13 +22,19 @@ router.post("/reservations", async (req, res): Promise<void> => {
   if (!parsed.success) { res.status(400).json({ error: "Choose a valid session and seat." }); return; }
   if (res.locals.user.role !== "rower") { res.status(403).json({ error: "Only rower accounts can reserve seats." }); return; }
   const result = await db.transaction(async (tx) => {
+    // Lock the rower before the launch: two simultaneous requests for different
+    // boats must not both pass the same date/shift conflict check.
+    await tx.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.id, res.locals.user.id)).for("update");
     const [launch] = await tx.select().from(launchesTable).where(eq(launchesTable.id, parsed.data.launchId)).for("update");
     if (!launch) return { status: 404, error: "Session not found." };
     if (launch.date < today()) return { status: 400, error: "This rowing date is in the past." };
     const [boat] = await tx.select().from(boatsTable).where(eq(boatsTable.id, launch.boatId)).for("share");
     if (parsed.data.position > boat.seats) return { status: 400, error: "That seat does not exist on this boat." };
+    const conflict = await tx.select({ id: reservationsTable.id }).from(reservationsTable)
+      .innerJoin(launchesTable, eq(reservationsTable.launchId, launchesTable.id))
+      .where(and(eq(reservationsTable.userId, res.locals.user.id), eq(launchesTable.date, launch.date), eq(launchesTable.shift, launch.shift)));
+    if (conflict.length) return { status: 409, error: `You already have a boat booked for ${launch.shift === "08:00" ? "8am" : "1pm"} on this date. Cancel that seat before booking another boat in this shift.` };
     const existing = await tx.select().from(reservationsTable).where(eq(reservationsTable.launchId, launch.id));
-    if (existing.some((r) => r.userId === res.locals.user.id)) return { status: 409, error: "You already have a seat on this boat for this date." };
     if (existing.some((r) => r.position === parsed.data.position)) return { status: 409, error: "That seat was just booked. Please select another available seat." };
     const [reservation] = await tx.insert(reservationsTable).values({ ...parsed.data, userId: res.locals.user.id }).returning();
     return { id: reservation.id };
@@ -50,7 +56,7 @@ router.get("/admin/roster", async (req, res): Promise<void> => {
   if (!query.success) { res.status(400).json({ error: "Invalid date filters." }); return; }
   const launches = await launchList(query.data.from, query.data.to);
   const roster = await Promise.all(launches.map(async (launch) => ({
-    launchId: launch.id, date: launch.date, boat: launch.boat, seats: await seatsForLaunch(launch.id),
+    launchId: launch.id, date: launch.date, shift: launch.shift, boat: launch.boat, seats: await seatsForLaunch(launch.id),
   })));
   res.json(ListRosterResponse.parse(roster));
 });

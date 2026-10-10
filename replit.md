@@ -41,6 +41,8 @@ ScullBook lets rowing club members reserve a specific scull seat and lets admini
 
 - Splash page, registration/login dialogs, rower dashboard, boat seat selection and confirmation, and reservation cancellation.
 - Administrator overview, fleet configuration, date/boat scheduling, upcoming crew rosters, and password changes.
+- Boats can be offered in either or both four-hour shifts: 8am–12pm and 1pm–5pm. A rower can reserve one boat per date/shift, including both shifts on the same day.
+- Seat occupants' names are visible to every signed-in user, including the rower's own name and crew on full boats. Never expose account emails or authentication data in crew views.
 - Both roles can log out; 15-minute idle expiry runs in the browser and on the server, with input-driven session renewal.
 - Four boat types: Single (1), Double (2), Quadruple (4), and Octuple (9 occupants including a coxswain).
 - Octuple position 1 is the stern Coxswain facing forward. Position 2 is Stroke (the source spec also calls it Stoke/Stoker); the other rowers face backward.
@@ -53,6 +55,7 @@ Follow the supplied ScullBook specification. Include sample boats and registered
 
 - Seeded accounts and the initial administrator password are for setup/demo use; change the administrator password before real club use.
 - Scheduled boats cannot change type until their sessions are removed. Booked sessions cannot be removed until their rowers cancel.
+- Before starting the shift-aware API against an older database, apply `lib/db/migrations/20261009_launch_shifts.sql` (or push the matching schema). It preserves old outings/bookings as 8am; existing overlaps are flagged, never silently cancelled.
 
 ## Pointers
 

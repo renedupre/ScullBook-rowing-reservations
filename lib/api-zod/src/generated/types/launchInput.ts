@@ -5,8 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { Shift } from './shift';
 
 export interface LaunchInput {
   date: string;
   boatId: number;
+  /**
+     * @minItems 1
+     * @maxItems 2
+     */
+  shifts: Shift[];
 }

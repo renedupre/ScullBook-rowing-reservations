@@ -1054,9 +1054,9 @@ export const getCreateLaunchUrl = () => {
 }
 
 /**
- * @summary Schedule a boat for a rowing date
+ * @summary Schedule a boat for one or both four-hour shifts
  */
-export const createLaunch = async (launchInput: LaunchInput, options?: Parameters<typeof customFetch>[1]): Promise<Launch> => {
+export const createLaunch = async (launchInput: LaunchInput, options?: Parameters<typeof customFetch>[1]): Promise<Launch[]> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -1072,7 +1072,7 @@ export const createLaunch = async (launchInput: LaunchInput, options?: Parameter
     }
     return headers;
   };
-return customFetch<Launch>(getCreateLaunchUrl(),
+return customFetch<Launch[]>(getCreateLaunchUrl(),
   {
     ...options,
     method: 'POST',
@@ -1120,7 +1120,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateLaunchMutationVariables = {data: BodyType<LaunchInput>}
 
     /**
- * @summary Schedule a boat for a rowing date
+ * @summary Schedule a boat for one or both four-hour shifts
  */
 export const useCreateLaunch = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLaunch>>, TError,CreateLaunchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

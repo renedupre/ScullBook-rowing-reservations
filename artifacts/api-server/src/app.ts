@@ -46,7 +46,7 @@ app.use("/api", router);
 app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const error = err as { code?: string; cause?: { code?: string }; type?: string };
   const code = error.code ?? error.cause?.code;
-  if (code === "23505") { res.status(409).json({ error: "This name, account, or boat/date assignment already exists, or the seat is already booked." }); return; }
+  if (code === "23505") { res.status(409).json({ error: "This name, account, or boat/date/shift assignment already exists, or the seat is already booked." }); return; }
   if (code === "23503") { res.status(409).json({ error: "This record is still in use. Remove its scheduled sessions or reservations first." }); return; }
   if (error.type === "entity.parse.failed") { res.status(400).json({ error: "Invalid request data." }); return; }
   req.log.error({ err }, "Request failed");

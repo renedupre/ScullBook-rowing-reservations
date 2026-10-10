@@ -6,10 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Boat } from './boat';
+import type { Shift } from './shift';
 
 export interface Launch {
   id: number;
   date: string;
+  shift: Shift;
   boat: Boat;
   bookedSeats: number;
   availableSeats: number;

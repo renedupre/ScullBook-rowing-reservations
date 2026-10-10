@@ -197,6 +197,7 @@ export const ListLaunchesQueryParams = zod.object({
 export const ListLaunchesResponseItem = zod.object({
   "id": zod.number().int(),
   "date": zod.string().date(),
+  "shift": zod.enum(['08:00', '13:00']),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
@@ -211,16 +212,22 @@ export const ListLaunchesResponse = zod.array(ListLaunchesResponseItem)
 
 
 /**
- * @summary Schedule a boat for a rowing date
+ * @summary Schedule a boat for one or both four-hour shifts
  */
+export const createLaunchBodyShiftsMax = 2;
+
+
+
 export const CreateLaunchBody = zod.object({
   "date": zod.string().date(),
-  "boatId": zod.number().int()
+  "boatId": zod.number().int(),
+  "shifts": zod.array(zod.enum(['08:00', '13:00'])).min(1).max(createLaunchBodyShiftsMax)
 })
 
-export const CreateLaunchResponse = zod.object({
+export const CreateLaunchResponseItem = zod.object({
   "id": zod.number().int(),
   "date": zod.string().date(),
+  "shift": zod.enum(['08:00', '13:00']),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
@@ -231,6 +238,7 @@ export const CreateLaunchResponse = zod.object({
   "availableSeats": zod.number().int(),
   "full": zod.boolean()
 })
+export const CreateLaunchResponse = zod.array(CreateLaunchResponseItem)
 
 
 /**
@@ -266,6 +274,7 @@ export const ListMyReservationsResponseItem = zod.object({
   "id": zod.number().int(),
   "launchId": zod.number().int(),
   "date": zod.string().date(),
+  "shift": zod.enum(['08:00', '13:00']),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
@@ -294,6 +303,7 @@ export const ReserveSeatResponse = zod.object({
   "id": zod.number().int(),
   "launchId": zod.number().int(),
   "date": zod.string().date(),
+  "shift": zod.enum(['08:00', '13:00']),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
@@ -326,6 +336,7 @@ export const ListRosterQueryParams = zod.object({
 export const ListRosterResponseItem = zod.object({
   "launchId": zod.number().int(),
   "date": zod.string().date(),
+  "shift": zod.enum(['08:00', '13:00']),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
@@ -353,6 +364,7 @@ export const GetAdminSummaryResponse = zod.object({
   "nextLaunches": zod.array(zod.object({
   "id": zod.number().int(),
   "date": zod.string().date(),
+  "shift": zod.enum(['08:00', '13:00']),
   "boat": zod.object({
   "id": zod.number().int(),
   "name": zod.string(),

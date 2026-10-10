@@ -11,13 +11,13 @@ export async function launchList(from = today(), to?: string) {
   const rows = await db.select({ launch: launchesTable, boat: boatsTable }).from(launchesTable)
     .innerJoin(boatsTable, eq(launchesTable.boatId, boatsTable.id))
     .where(and(gte(launchesTable.date, from), to ? lte(launchesTable.date, to) : undefined))
-    .orderBy(asc(launchesTable.date), asc(boatsTable.name));
+    .orderBy(asc(launchesTable.date), asc(launchesTable.shift), asc(boatsTable.name));
   const bookings = await db.select({ launchId: reservationsTable.launchId }).from(reservationsTable);
   const counts = new Map<number, number>();
   bookings.forEach((booking) => counts.set(booking.launchId, (counts.get(booking.launchId) ?? 0) + 1));
   return rows.map(({ launch, boat }) => {
     const bookedSeats = counts.get(launch.id) ?? 0;
-    return { id: launch.id, date: launch.date, boat, bookedSeats, availableSeats: boat.seats - bookedSeats, full: bookedSeats >= boat.seats };
+    return { id: launch.id, date: launch.date, shift: launch.shift, boat, bookedSeats, availableSeats: boat.seats - bookedSeats, full: bookedSeats >= boat.seats };
   });
 }
 export async function launchById(id: number) {
@@ -42,6 +42,6 @@ export async function reservationById(id: number) {
     .from(reservationsTable).innerJoin(launchesTable, eq(reservationsTable.launchId, launchesTable.id))
     .innerJoin(boatsTable, eq(launchesTable.boatId, boatsTable.id)).where(eq(reservationsTable.id, id));
   if (!record) return null;
-  return { id: record.reservation.id, launchId: record.launch.id, date: record.launch.date, boat: record.boat,
+  return { id: record.reservation.id, launchId: record.launch.id, date: record.launch.date, shift: record.launch.shift, boat: record.boat,
     position: record.reservation.position, seatLabel: seatLabel(record.boat.type, record.reservation.position, record.boat.seats) };
 }

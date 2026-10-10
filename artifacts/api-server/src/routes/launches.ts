@@ -13,11 +13,16 @@ router.get("/launches", async (req, res): Promise<void> => {
 });
 router.post("/launches", requireAdmin, async (req, res): Promise<void> => {
   const parsed = CreateLaunchBody.safeParse(req.body);
-  if (!parsed.success || parsed.data.date < today()) { res.status(400).json({ error: "Choose today or a future date and a boat." }); return; }
+  if (!parsed.success || parsed.data.date < today()) { res.status(400).json({ error: "Choose today or a future date, a boat, and an 8am or 1pm shift." }); return; }
   const [boat] = await db.select().from(boatsTable).where(eq(boatsTable.id, parsed.data.boatId));
   if (!boat) { res.status(404).json({ error: "Boat not found." }); return; }
-  const [launch] = await db.insert(launchesTable).values(parsed.data).returning();
-  res.status(201).json(CreateLaunchResponse.parse({ id: launch.id, date: launch.date, boat, bookedSeats: 0, availableSeats: boat.seats, full: false }));
+  const shifts = [...new Set(parsed.data.shifts)];
+  const launches = await db.insert(launchesTable).values(shifts.map((shift) => ({
+    date: parsed.data.date, boatId: boat.id, shift,
+  }))).returning();
+  res.status(201).json(CreateLaunchResponse.parse(launches.map((launch) => ({
+    id: launch.id, date: launch.date, shift: launch.shift, boat, bookedSeats: 0, availableSeats: boat.seats, full: false,
+  }))));
 });
 router.delete("/launches/:launchId", requireAdmin, async (req, res): Promise<void> => {
   const params = DeleteLaunchParams.safeParse(req.params);

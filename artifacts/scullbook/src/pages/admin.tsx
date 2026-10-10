@@ -2,7 +2,8 @@ import { useState, type FormEvent } from "react";
 import {
   useChangePassword, useCreateBoat, useCreateLaunch, useDeleteBoat, useDeleteLaunch,
   useGetAdminSummary, useListBoats, useListLaunches, useListRoster, useUpdateBoat,
-  type Boat, type BoatInput, type Launch,
+  getGetAdminSummaryQueryKey, getListLaunchesQueryKey, getListRosterQueryKey,
+  type Boat, type BoatInput, type Launch, type Shift,
 } from "@workspace/api-client-react";
 import { Shell } from "@/components/shell";
 import { Confirm } from "@/components/confirm";
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CAPACITY, errMsg, fmtDate, passwordProblems, useRefreshData } from "@/lib/util";
+import { CAPACITY, errMsg, fmtDate, fmtShift, passwordProblems, useRefreshData } from "@/lib/util";
 
 const TYPES = Object.keys(CAPACITY) as BoatInput["type"][];
 const selectCls = "h-9 w-full rounded-md border border-input bg-card px-3 text-sm";
@@ -29,7 +30,7 @@ function Stat({ n, label, id }: { n?: number; label: string; id: string }) {
 }
 
 function Overview() {
-  const s = useGetAdminSummary();
+  const s = useGetAdminSummary({ query: { queryKey: getGetAdminSummaryQueryKey(), refetchInterval: 10000 } });
   if (s.isLoading) return <Skeleton className="h-40 w-full" />;
   if (s.isError) return <p className="text-sm text-destructive">{errMsg(s.error)} <Button size="sm" variant="outline" onClick={() => s.refetch()}>Retry</Button></p>;
   const d = s.data;
@@ -47,7 +48,7 @@ function Overview() {
         <ul className="mt-3 divide-y divide-border">
           {d?.nextLaunches.map((l) => (
             <li key={l.id} className="flex justify-between py-3" data-testid={"row-next-" + l.id}>
-              <span>{fmtDate(l.date)} / {l.boat.name}</span>
+              <span>{fmtDate(l.date)} / {fmtShift(l.shift)} / {l.boat.name}</span>
               <span className="text-muted-foreground">{l.bookedSeats}/{l.boat.seats} seats</span>
             </li>
           ))}
@@ -115,18 +116,19 @@ function Boats() {
 
 function Schedule() {
   const boats = useListBoats();
-  const launches = useListLaunches();
+  const launches = useListLaunches(undefined, { query: { queryKey: getListLaunchesQueryKey(), refetchInterval: 10000 } });
   const create = useCreateLaunch();
   const remove = useDeleteLaunch();
   const refresh = useRefreshData();
   const [date, setDate] = useState("");
   const [boatId, setBoatId] = useState("");
+  const [shift, setShift] = useState<Shift | "both">("08:00");
   const [del, setDel] = useState<Launch | null>(null);
   const [error, setError] = useState<string | null>(null);
   const submit = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    create.mutate({ data: { date, boatId: Number(boatId) } }, {
+    create.mutate({ data: { date, boatId: Number(boatId), shifts: shift === "both" ? ["08:00", "13:00"] : [shift] } }, {
       onSuccess: () => { setDate(""); refresh(); },
       onError: (er) => setError(errMsg(er)),
     });
@@ -139,24 +141,32 @@ function Schedule() {
         {launches.data?.length === 0 && <p className="text-muted-foreground" data-testid="empty-schedule">No dates scheduled.</p>}
         {launches.data?.map((l) => (
           <div key={l.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-card p-4" data-testid={"row-launch-" + l.id}>
-            <div><p className="font-serif text-xl">{fmtDate(l.date)}</p><p className="text-sm text-muted-foreground">{l.boat.name} / {l.bookedSeats}/{l.boat.seats} booked{l.full ? " / full" : ""}</p></div>
+            <div><p className="font-serif text-xl">{fmtDate(l.date)} / {fmtShift(l.shift)}</p><p className="text-sm text-muted-foreground">{l.boat.name} / {l.bookedSeats}/{l.boat.seats} booked{l.full ? " / full" : ""}</p></div>
             <Button size="sm" variant="outline" onClick={() => setDel(l)} data-testid={"button-delete-launch-" + l.id}>Delete</Button>
           </div>
         ))}
       </div>
       <form onSubmit={submit} className="space-y-3 self-start rounded-lg border border-border bg-card p-4">
-        <h3 className="font-serif text-xl">Schedule a date</h3>
+        <h3 className="font-serif text-xl">Schedule a boat shift</h3>
         <div className="space-y-1.5"><Label htmlFor="s-date">Date</Label><Input id="s-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required data-testid="input-launch-date" /></div>
         <div className="space-y-1.5"><Label htmlFor="s-boat">Boat</Label>
           <select id="s-boat" className={selectCls} value={boatId} onChange={(e) => setBoatId(e.target.value)} required data-testid="select-launch-boat">
             <option value="" disabled>Choose a boat</option>
             {boats.data?.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.type})</option>)}
           </select></div>
+        <div className="space-y-1.5"><Label htmlFor="s-shift">Launch shift (four hours)</Label>
+          <select id="s-shift" className={selectCls} value={shift} onChange={(e) => setShift(e.target.value as Shift | "both")} data-testid="select-launch-shift">
+            <option value="08:00">8am–12pm</option>
+            <option value="13:00">1pm–5pm</option>
+            <option value="both">Both shifts</option>
+          </select>
+          <p className="text-xs text-muted-foreground">If one shift is already scheduled, choose only the missing shift. Both shifts are saved together or neither is saved.</p>
+        </div>
         <Err m={error} />
         <Button type="submit" disabled={create.isPending} data-testid="button-create-launch">Schedule</Button>
       </form>
-      <Confirm open={!!del} onOpenChange={(o) => !o && setDel(null)} testid="confirm-delete-launch" title="Delete this date?"
-        body={del ? "The outing on " + fmtDate(del.date) + " and its reservations will be removed." : ""} yes="Delete"
+      <Confirm open={!!del} onOpenChange={(o) => !o && setDel(null)} testid="confirm-delete-launch" title="Delete this shift?"
+        body={del ? "Remove " + del.boat.name + " on " + fmtDate(del.date) + ", " + fmtShift(del.shift) + "? Booked shifts cannot be removed until their rowers cancel." : ""} yes="Delete"
         onYes={() => del && remove.mutate({ launchId: del.id }, { onSuccess: () => { setDel(null); refresh(); }, onError: (e) => { setDel(null); setError(errMsg(e)); } })} />
     </div>
   );
@@ -166,7 +176,7 @@ function Rosters() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const params = from || to ? { ...(from ? { from } : {}), ...(to ? { to } : {}) } : undefined;
-  const r = useListRoster(params);
+  const r = useListRoster(params, { query: { queryKey: getListRosterQueryKey(params), refetchInterval: 10000 } });
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end gap-3">
@@ -179,7 +189,7 @@ function Rosters() {
       {r.data?.length === 0 && <p className="text-muted-foreground" data-testid="empty-roster">No outings in this range.</p>}
       {r.data?.map((e) => (
         <div key={e.launchId} className="rounded-lg bg-card p-4" data-testid={"roster-" + e.launchId}>
-          <p className="font-serif text-xl">{fmtDate(e.date)} <span className="text-base text-muted-foreground">/ {e.boat.name}, {e.boat.type}</span></p>
+          <p className="font-serif text-xl">{fmtDate(e.date)} / {fmtShift(e.shift)} <span className="text-base text-muted-foreground">/ {e.boat.name}, {e.boat.type}</span></p>
           <ol className="mt-3 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             {[...e.seats].sort((a, b) => a.position - b.position).map((s) => (
               <li key={s.position} className="flex justify-between border-b border-border/60 py-1">

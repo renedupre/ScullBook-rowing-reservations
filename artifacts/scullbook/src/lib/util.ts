@@ -9,6 +9,9 @@ export function errMsg(e: unknown): string {
 export function fmtDate(d: string): string {
   try { return format(parseISO(d), "EEE d MMM yyyy"); } catch { return d; }
 }
+export function fmtShift(shift: string): string {
+  return shift === "08:00" ? "8am–12pm" : "1pm–5pm";
+}
 
 export const CAPACITY: Record<string, number> = {
   "Single Scull": 1,

@@ -202,7 +202,7 @@ paths:
     post:
       operationId: createLaunch
       tags: [launches]
-      summary: Schedule a boat for a rowing date
+      summary: Schedule a boat for one or both four-hour shifts
       requestBody:
         required: true
         content:
@@ -211,11 +211,13 @@ paths:
               $ref: "#/components/schemas/LaunchInput"
       responses:
         "201":
-          description: Session scheduled
+          description: Sessions scheduled atomically
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Launch"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Launch"
   /launches/{launchId}:
     delete:
       operationId: deleteLaunch
@@ -400,20 +402,30 @@ components:
         seats: { type: integer, minimum: 1, maximum: 9 }
     Launch:
       type: object
-      required: [id, date, boat, bookedSeats, availableSeats, full]
+      required: [id, date, shift, boat, bookedSeats, availableSeats, full]
       properties:
         id: { type: integer }
         date: { type: string, format: date }
+        shift: { $ref: "#/components/schemas/Shift" }
         boat: { $ref: "#/components/schemas/Boat" }
         bookedSeats: { type: integer }
         availableSeats: { type: integer }
         full: { type: boolean }
     LaunchInput:
       type: object
-      required: [date, boatId]
+      required: [date, boatId, shifts]
       properties:
         date: { type: string, format: date }
         boatId: { type: integer }
+        shifts:
+          type: array
+          minItems: 1
+          maxItems: 2
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/Shift" }
+    Shift:
+      type: string
+      enum: ["08:00", "13:00"]
     Seat:
       type: object
       required: [position, label, occupied]
@@ -424,11 +436,12 @@ components:
         rowerName: { type: ["string", "null"] }
     Reservation:
       type: object
-      required: [id, launchId, date, boat, position, seatLabel]
+      required: [id, launchId, date, shift, boat, position, seatLabel]
       properties:
         id: { type: integer }
         launchId: { type: integer }
         date: { type: string, format: date }
+        shift: { $ref: "#/components/schemas/Shift" }
         boat: { $ref: "#/components/schemas/Boat" }
         position: { type: integer }
         seatLabel: { type: string }
@@ -440,10 +453,11 @@ components:
         position: { type: integer, minimum: 1, maximum: 9 }
     RosterEntry:
       type: object
-      required: [launchId, date, boat, seats]
+      required: [launchId, date, shift, boat, seats]
       properties:
         launchId: { type: integer }
         date: { type: string, format: date }
+        shift: { $ref: "#/components/schemas/Shift" }
         boat: { $ref: "#/components/schemas/Boat" }
         seats:
           type: array
