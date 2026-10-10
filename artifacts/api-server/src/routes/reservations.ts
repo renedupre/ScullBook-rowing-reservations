@@ -66,7 +66,9 @@ router.get("/admin/summary", async (_req, res) => {
   const boats = await db.select({ id: boatsTable.id }).from(boatsTable);
   res.json(GetAdminSummaryResponse.parse({
     rowerCount: rowers.length, boatCount: boats.length, upcomingLaunchCount: launches.length,
-    reservationCount: launches.reduce((total, launch) => total + launch.bookedSeats, 0), nextLaunches: launches.slice(0, 6),
+    // Overview date filtering/reset must operate on every upcoming outing,
+    // not a preview capped at six records.
+    reservationCount: launches.reduce((total, launch) => total + launch.bookedSeats, 0), nextLaunches: launches,
   }));
 });
 export default router;

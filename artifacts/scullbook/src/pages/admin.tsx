@@ -7,6 +7,8 @@ import {
 } from "@workspace/api-client-react";
 import { Shell } from "@/components/shell";
 import { Confirm } from "@/components/confirm";
+import { WeeklySeatChart } from "@/components/weekly-seat-chart";
+import { aggregateWeek, currentLaWeekStart, filterByDay, shiftWeek, weekStartOf } from "@/lib/overview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,9 +33,14 @@ function Stat({ n, label, id }: { n?: number; label: string; id: string }) {
 
 function Overview() {
   const s = useGetAdminSummary({ query: { queryKey: getGetAdminSummaryQueryKey(), refetchInterval: 10000 } });
+  const [weekStart, setWeekStart] = useState(() => currentLaWeekStart());
+  const [day, setDay] = useState<string | null>(null);
+  const goWeek = (w: string) => { setWeekStart(w); setDay(null); };
   if (s.isLoading) return <Skeleton className="h-40 w-full" />;
   if (s.isError) return <p className="text-sm text-destructive">{errMsg(s.error)} <Button size="sm" variant="outline" onClick={() => s.refetch()}>Retry</Button></p>;
   const d = s.data;
+  const all = d?.nextLaunches ?? [];
+  const shown = filterByDay(all, day);
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
@@ -42,11 +49,20 @@ function Overview() {
         <Stat n={d?.upcomingLaunchCount} label="Upcoming outings" id="launches" />
         <Stat n={d?.reservationCount} label="Reservations" id="reservations" />
       </div>
+      <WeeklySeatChart
+        data={aggregateWeek(all, weekStart)} weekStart={weekStart} selectedDay={day}
+        onSelectDay={setDay}
+        onPrev={() => goWeek(shiftWeek(weekStart, -1))}
+        onNext={() => goWeek(shiftWeek(weekStart, 1))}
+        onPickWeek={(v) => goWeek(weekStartOf(v))}
+        onReset={() => { setDay(null); setWeekStart(currentLaWeekStart()); }}
+      />
       <div>
         <h3 className="font-serif text-2xl">Next on the water</h3>
-        {d?.nextLaunches.length === 0 && <p className="mt-2 text-muted-foreground">Nothing scheduled.</p>}
+        {all.length === 0 && <p className="mt-2 text-muted-foreground">Nothing scheduled.</p>}
+        {all.length > 0 && shown.length === 0 && <p className="mt-2 text-muted-foreground" data-testid="text-day-empty">No outings on this day.</p>}
         <ul className="mt-3 divide-y divide-border">
-          {d?.nextLaunches.map((l) => (
+          {shown.map((l) => (
             <li key={l.id} className="flex justify-between py-3" data-testid={"row-next-" + l.id}>
               <span>{fmtDate(l.date)} / {fmtShift(l.shift)} / {l.boat.name}</span>
               <span className="text-muted-foreground">{l.bookedSeats}/{l.boat.seats} seats</span>
