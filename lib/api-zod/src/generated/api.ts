@@ -28,6 +28,26 @@ export const ListMyNoticesResponse = zod.array(ListMyNoticesResponseItem)
 
 
 /**
+ * Uses the signed-in recipient only. Preserves notice history and existing read timestamps. Repeating the request when nothing is unread returns an empty array.
+ * @summary Mark all your unread booking notices read
+ */
+export const MarkAllNoticesReadResponseItem = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['cancellation', 'seat_swap']),
+  "boatName": zod.string(),
+  "date": zod.string().date(),
+  "shift": zod.enum(['08:00', '13:00']),
+  "oldPosition": zod.number().int(),
+  "oldSeatLabel": zod.string(),
+  "newPosition": zod.number().int().nullable(),
+  "newSeatLabel": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "readAt": zod.string().datetime({"offset":true}).nullable()
+})
+export const MarkAllNoticesReadResponse = zod.array(MarkAllNoticesReadResponseItem)
+
+
+/**
  * @summary Mark your own notice read
  */
 

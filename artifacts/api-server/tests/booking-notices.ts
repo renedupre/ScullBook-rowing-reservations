@@ -52,6 +52,8 @@ try {
 
   assert.equal((await request("/notices")).status, 401);
   assert.equal((await request("/notices/1/read", undefined, "PATCH")).status, 401);
+  assert.equal((await request("/notices/read", undefined, "PATCH")).status, 401);
+  assert.deepEqual(await request("/notices/read", tokens[3], "PATCH"), { status: 200, data: [] });
   assert.equal((await swap(2, 1)).status, 409);
   assert.deepEqual(await list(1), []);
   assert.equal((await request(`/reservations/${first.id}?expectedPosition=2`, tokens[0], "DELETE")).status, 409);
@@ -109,6 +111,22 @@ try {
   assert.equal((await request(`/reservations/${first.id}`, tokens[0], "DELETE")).status, 404);
   assert.equal((await list(1)).length, 2);
 
+  // Bulk reading preserves history, existing timestamps, and other recipients.
+  const otherRecipientBefore = await list(2);
+  const beforeBulk = await list(1);
+  const bulk = await request("/notices/read", tokens[1], "PATCH", { recipientId: accounts[2].id });
+  assert.equal(bulk.status, 200);
+  assert.equal(bulk.data.length, 1);
+  assert.equal(bulk.data[0].id, cancellation.id);
+  assert.ok(bulk.data[0].readAt);
+  assert.equal("recipientId" in bulk.data[0], false);
+  const afterBulk = await list(1);
+  assert.deepEqual(afterBulk, beforeBulk.map((notice: any) => notice.id === cancellation.id ? bulk.data[0] : notice));
+  assert.equal(afterBulk.find((notice: any) => notice.id === a.id).readAt, read.data.readAt);
+  assert.deepEqual(await list(2), otherRecipientBefore);
+  assert.deepEqual(await request("/notices/read", tokens[1], "PATCH"), { status: 200, data: [] });
+  assert.deepEqual(await list(1), afterBulk);
+
   // A rower's own cancellation sends no admin-change notice.
   assert.equal((await request(`/reservations/${third.id}`, tokens[3], "DELETE")).status, 204);
   assert.deepEqual(await list(3), []);
@@ -118,6 +136,20 @@ try {
   assert.equal(unchanged.position, 1);
 
   await checkConcurrentBookingNotices({ boatId: boat.id, boatName: prefix, userIds, tokens, request });
+
+  const historyBefore = await list(1);
+  const othersBefore = await Promise.all([list(0), list(2), list(3)]);
+  assert.ok(historyBefore.filter((notice: any) => !notice.readAt).length > 1);
+  const allRead = await request("/notices/read", tokens[1], "PATCH");
+  assert.equal(allRead.status, 200);
+  assert.equal(allRead.data.length, historyBefore.filter((notice: any) => !notice.readAt).length);
+  const changedById = new Map(allRead.data.map((notice: any) => [notice.id, notice]));
+  const historyAfter = await list(1);
+  assert.deepEqual(historyAfter, historyBefore.map((notice: any) => changedById.get(notice.id) ?? notice));
+  assert.ok(historyAfter.every((notice: any) => notice.readAt));
+  assert.deepEqual(await Promise.all([list(0), list(2), list(3)]), othersBefore);
+  assert.deepEqual(await request("/notices/read", tokens[1], "PATCH"), { status: 200, data: [] });
+  assert.deepEqual(await list(1), historyAfter);
 
   // Notices survive removal of the now-unbooked outing and boat.
   await db.delete(reservationsTable).where(eq(reservationsTable.launchId, launch.id));

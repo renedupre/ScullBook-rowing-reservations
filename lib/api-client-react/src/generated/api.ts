@@ -149,6 +149,81 @@ export function useListMyNotices<TData = Awaited<ReturnType<typeof listMyNotices
 
 
 
+export const getMarkAllNoticesReadUrl = () => {
+
+
+
+
+  return `/api/notices/read`
+}
+
+/**
+ * Uses the signed-in recipient only. Preserves notice history and existing read timestamps. Repeating the request when nothing is unread returns an empty array.
+ * @summary Mark all your unread booking notices read
+ */
+export const markAllNoticesRead = async ( options?: Parameters<typeof customFetch>[1]): Promise<BookingNotice[]> => {
+
+  return customFetch<BookingNotice[]>(getMarkAllNoticesReadUrl(),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkAllNoticesReadMutationKey = () => ['markAllNoticesRead'] as const;
+
+export const getMarkAllNoticesReadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllNoticesRead>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markAllNoticesRead>>, TError,void, TContext> => {
+
+const mutationKey = getMarkAllNoticesReadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markAllNoticesRead>>, void> = () => {
+
+
+          return  markAllNoticesRead(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkAllNoticesReadMutationResult = NonNullable<Awaited<ReturnType<typeof markAllNoticesRead>>>
+
+    export type MarkAllNoticesReadMutationError = ErrorType<void>
+
+
+    /**
+ * @summary Mark all your unread booking notices read
+ */
+export const useMarkAllNoticesRead = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllNoticesRead>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markAllNoticesRead>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getMarkAllNoticesReadMutationOptions(options));
+    }
+
 export const getMarkNoticeReadUrl = (noticeId: number,) => {
 
 

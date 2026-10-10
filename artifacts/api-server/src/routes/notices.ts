@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { db, noticesTable, type NoticeRecord } from "@workspace/db";
-import { ListMyNoticesResponse, MarkNoticeReadParams, MarkNoticeReadResponse } from "@workspace/api-zod";
+import { ListMyNoticesResponse, MarkAllNoticesReadResponse, MarkNoticeReadParams, MarkNoticeReadResponse } from "@workspace/api-zod";
 import { requireUser } from "../lib/auth";
 
 const router = Router();
@@ -16,6 +16,14 @@ router.get("/notices", async (_req, res): Promise<void> => {
     .where(eq(noticesTable.recipientId, res.locals.user.id))
     .orderBy(desc(noticesTable.createdAt), desc(noticesTable.id));
   res.json(ListMyNoticesResponse.parse(notices.map(publicNotice)));
+});
+
+router.patch("/notices/read", async (_req, res): Promise<void> => {
+  const notices = await db.update(noticesTable)
+    .set({ readAt: sql`now()` })
+    .where(and(eq(noticesTable.recipientId, res.locals.user.id), isNull(noticesTable.readAt)))
+    .returning();
+  res.json(MarkAllNoticesReadResponse.parse(notices.map(publicNotice)));
 });
 
 router.patch("/notices/:noticeId/read", async (req, res): Promise<void> => {

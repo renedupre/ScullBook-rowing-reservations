@@ -34,6 +34,22 @@ paths:
                 items: { $ref: "#/components/schemas/BookingNotice" }
         "401":
           description: Sign-in required
+  /notices/read:
+    patch:
+      operationId: markAllNoticesRead
+      tags: [reservations]
+      summary: Mark all your unread booking notices read
+      description: Uses the signed-in recipient only. Preserves notice history and existing read timestamps. Repeating the request when nothing is unread returns an empty array.
+      responses:
+        "200":
+          description: Notices changed from unread to read
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BookingNotice" }
+        "401":
+          description: Sign-in required
   /notices/{noticeId}/read:
     patch:
       operationId: markNoticeRead
