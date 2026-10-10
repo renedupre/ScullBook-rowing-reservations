@@ -10,6 +10,7 @@ ScullBook lets rowing club members reserve a specific scull seat and lets admini
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/scripts exec tsx ../artifacts/api-server/tests/booking-notices.ts` — check private notice delivery, failed changes, and read persistence against running dev workflows using disposable fixtures
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
@@ -44,6 +45,7 @@ ScullBook lets rowing club members reserve a specific scull seat and lets admini
 - Boats can be offered in either or both four-hour shifts: 8am–12pm and 1pm–5pm. A rower can reserve one boat per date/shift, including both shifts on the same day.
 - Admin Overview has a weekly booked/available seat chart, summing all boats and both shifts by date. Selecting a day filters Next on the water; reset restores all upcoming outings.
 - Admins can open an Overview outing's graphical crew map, cancel one occupied seat, or swap two occupied seats within that same outing. Both changes require confirmation and preserve unrelated bookings.
+- Successful admin cancellations and swaps save private in-app notices for affected rowers atomically with the booking change. Rower dashboards poll for unread notices and support marking them read and viewing history; the boat/date/shift/seat snapshot survives later deletion of the outing.
 - Admins can select an open seat, click Reserve, search registered rowers by first or last name in a scrollable pick list, and click a name to book that seat. The normal one-boat-per-date/shift rule also applies to admin bookings.
 - Seat occupants' names are visible to every signed-in user, including the rower's own name and crew on full boats. Never expose account emails or authentication data in crew views.
 - Both roles can log out; 15-minute idle expiry runs in the browser and on the server, with input-driven session renewal.
@@ -59,6 +61,7 @@ Follow the supplied ScullBook specification. Include sample boats and registered
 - Seeded accounts and the initial administrator password are for setup/demo use; change the administrator password before real club use.
 - Scheduled boats cannot change type until their sessions are removed. Booked sessions cannot be removed until their rowers cancel.
 - Before starting the shift-aware API against an older database, apply `lib/db/migrations/20261009_launch_shifts.sql` (or push the matching schema). It preserves old outings/bookings as 8am; existing overlaps are flagged, never silently cancelled.
+- Before running booking notices against an older database, apply `lib/db/migrations/20261010_booking_notices.sql` (or push the matching schema). Admin cancellations and seat swaps require this table.
 
 ## Pointers
 

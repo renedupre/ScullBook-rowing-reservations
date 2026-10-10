@@ -9,6 +9,50 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary List booking notices for the signed-in recipient, newest first
+ */
+export const ListMyNoticesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['cancellation', 'seat_swap']),
+  "boatName": zod.string(),
+  "date": zod.string().date(),
+  "shift": zod.enum(['08:00', '13:00']),
+  "oldPosition": zod.number().int(),
+  "oldSeatLabel": zod.string(),
+  "newPosition": zod.number().int().nullable(),
+  "newSeatLabel": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "readAt": zod.string().datetime({"offset":true}).nullable()
+})
+export const ListMyNoticesResponse = zod.array(ListMyNoticesResponseItem)
+
+
+/**
+ * @summary Mark your own notice read
+ */
+
+
+
+export const MarkNoticeReadParams = zod.object({
+  "noticeId": zod.coerce.number().int().min(1)
+})
+
+export const MarkNoticeReadResponse = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['cancellation', 'seat_swap']),
+  "boatName": zod.string(),
+  "date": zod.string().date(),
+  "shift": zod.enum(['08:00', '13:00']),
+  "oldPosition": zod.number().int(),
+  "oldSeatLabel": zod.string(),
+  "newPosition": zod.number().int().nullable(),
+  "newSeatLabel": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "readAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

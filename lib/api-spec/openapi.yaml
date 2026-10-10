@@ -19,6 +19,43 @@ tags:
   - name: reservations
     description: Seat reservations and rosters
 paths:
+  /notices:
+    get:
+      operationId: listMyNotices
+      tags: [reservations]
+      summary: List booking notices for the signed-in recipient, newest first
+      responses:
+        "200":
+          description: Private booking notices
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BookingNotice" }
+        "401":
+          description: Sign-in required
+  /notices/{noticeId}/read:
+    patch:
+      operationId: markNoticeRead
+      tags: [reservations]
+      summary: Mark your own notice read
+      parameters:
+        - name: noticeId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Notice marked read (idempotent)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingNotice" }
+        "400":
+          description: Invalid notice ID
+        "401":
+          description: Sign-in required
+        "404":
+          description: Notice not found for this recipient
   /healthz:
     get:
       operationId: healthCheck
@@ -427,6 +464,21 @@ components:
         firstName: { type: string }
         lastName: { type: string }
         role: { type: string, enum: [admin, rower] }
+    BookingNotice:
+      type: object
+      required: [id, kind, boatName, date, shift, oldPosition, oldSeatLabel, newPosition, newSeatLabel, createdAt, readAt]
+      properties:
+        id: { type: integer }
+        kind: { type: string, enum: [cancellation, seat_swap] }
+        boatName: { type: string }
+        date: { type: string, format: date }
+        shift: { $ref: "#/components/schemas/Shift" }
+        oldPosition: { type: integer }
+        oldSeatLabel: { type: string }
+        newPosition: { type: ["integer", "null"] }
+        newSeatLabel: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        readAt: { type: ["string", "null"], format: date-time }
     SessionResponse:
       type: object
       required: [user]

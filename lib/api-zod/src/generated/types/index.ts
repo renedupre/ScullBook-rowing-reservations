@@ -11,6 +11,8 @@ export * from './boat';
 export * from './boatInput';
 export * from './boatInputType';
 export * from './boatType';
+export * from './bookingNotice';
+export * from './bookingNoticeKind';
 export * from './cancelReservationParams';
 export * from './changePasswordInput';
 export * from './healthStatus';

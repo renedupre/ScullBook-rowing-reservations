@@ -4,6 +4,7 @@ import {
   getListLaunchesQueryKey, getListMyReservationsQueryKey, useCancelReservation, useListLaunches, useListMyReservations, type Launch, type Reservation,
 } from "@workspace/api-client-react";
 import { Shell } from "@/components/shell";
+import { BookingNotices } from "@/components/booking-notices";
 import { SeatMap } from "@/components/seat-map";
 import { Confirm } from "@/components/confirm";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export default function Rower() {
     <Shell label="Rower">
       <h1 className="font-serif text-4xl">Your seats</h1>
       <p className="mt-2 text-sm text-muted-foreground">Book one boat per date and shift: 8am–12pm and 1pm–5pm. You can book both shifts.</p>
+      <BookingNotices />
       {!!conflicting?.length && <p role="alert" className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm" data-testid="text-existing-conflicts">You have existing bookings that overlap in the same shift. Please cancel the extra seats below; your reservations have not been automatically removed.</p>}
       {error && <p role="alert" className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive" data-testid="text-error">{error}</p>}
       <section className="mt-4 space-y-3">

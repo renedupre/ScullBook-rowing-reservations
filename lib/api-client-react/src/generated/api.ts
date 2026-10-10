@@ -23,6 +23,7 @@ import type {
   AdminSummary,
   Boat,
   BoatInput,
+  BookingNotice,
   CancelReservationParams,
   ChangePasswordInput,
   HealthStatus,
@@ -70,6 +71,157 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getListMyNoticesUrl = () => {
+
+
+
+
+  return `/api/notices`
+}
+
+/**
+ * @summary List booking notices for the signed-in recipient, newest first
+ */
+export const listMyNotices = async ( options?: Parameters<typeof customFetch>[1]): Promise<BookingNotice[]> => {
+
+  return customFetch<BookingNotice[]>(getListMyNoticesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyNoticesQueryKey = () => {
+    return [
+    `/api/notices`
+    ] as const;
+    }
+
+
+export const getListMyNoticesQueryOptions = <TData = Awaited<ReturnType<typeof listMyNotices>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyNotices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyNoticesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyNotices>>> = ({ signal }) => listMyNotices({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyNotices>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyNoticesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyNotices>>>
+export type ListMyNoticesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List booking notices for the signed-in recipient, newest first
+ */
+
+export function useListMyNotices<TData = Awaited<ReturnType<typeof listMyNotices>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyNotices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyNoticesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getMarkNoticeReadUrl = (noticeId: number,) => {
+
+
+
+
+  return `/api/notices/${noticeId}/read`
+}
+
+/**
+ * @summary Mark your own notice read
+ */
+export const markNoticeRead = async (noticeId: number, options?: Parameters<typeof customFetch>[1]): Promise<BookingNotice> => {
+
+  return customFetch<BookingNotice>(getMarkNoticeReadUrl(noticeId),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkNoticeReadMutationKey = () => ['markNoticeRead'] as const;
+
+export const getMarkNoticeReadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNoticeRead>>, TError,MarkNoticeReadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markNoticeRead>>, TError,MarkNoticeReadMutationVariables, TContext> => {
+
+const mutationKey = getMarkNoticeReadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markNoticeRead>>, MarkNoticeReadMutationVariables> = (props) => {
+          const {noticeId} = props ?? {};
+
+          return  markNoticeRead(noticeId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkNoticeReadMutationResult = NonNullable<Awaited<ReturnType<typeof markNoticeRead>>>
+
+    export type MarkNoticeReadMutationError = ErrorType<void>
+    export type MarkNoticeReadMutationVariables = {noticeId: number}
+
+    /**
+ * @summary Mark your own notice read
+ */
+export const useMarkNoticeRead = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNoticeRead>>, TError,MarkNoticeReadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markNoticeRead>>,
+        TError,
+        MarkNoticeReadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMarkNoticeReadMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 

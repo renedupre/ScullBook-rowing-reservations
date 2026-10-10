@@ -22,3 +22,4 @@ export * from "./sessions";
 export * from "./boats";
 export * from "./launches";
 export * from "./reservations";
+export * from "./notices";

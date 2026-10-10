@@ -25,6 +25,39 @@ export interface User {
   role: UserRole;
 }
 
+export type BookingNoticeKind = typeof BookingNoticeKind[keyof typeof BookingNoticeKind];
+
+
+export const BookingNoticeKind = {
+  cancellation: 'cancellation',
+  seat_swap: 'seat_swap',
+} as const;
+
+export type Shift = typeof Shift[keyof typeof Shift];
+
+
+export const Shift = {
+  '08:00': '08:00',
+  '13:00': '13:00',
+} as const;
+
+export interface BookingNotice {
+  id: number;
+  kind: BookingNoticeKind;
+  boatName: string;
+  date: string;
+  shift: Shift;
+  oldPosition: number;
+  oldSeatLabel: string;
+  /** @nullable */
+  newPosition: number | null;
+  /** @nullable */
+  newSeatLabel: string | null;
+  createdAt: string;
+  /** @nullable */
+  readAt: string | null;
+}
+
 export interface SessionResponse {
   user: User;
 }
@@ -103,14 +136,6 @@ export interface BoatInput {
      */
   seats: number;
 }
-
-export type Shift = typeof Shift[keyof typeof Shift];
-
-
-export const Shift = {
-  '08:00': '08:00',
-  '13:00': '13:00',
-} as const;
 
 export interface Launch {
   id: number;

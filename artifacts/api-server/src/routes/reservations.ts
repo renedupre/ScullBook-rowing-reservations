@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { and, eq, gte, or, ilike, asc, sql } from "drizzle-orm";
-import { db, boatsTable, launchesTable, reservationsTable, usersTable } from "@workspace/db";
+import { db, boatsTable, launchesTable, reservationsTable, usersTable, noticesTable } from "@workspace/db";
 import { ListMyReservationsResponse, ReserveSeatBody, ReserveSeatResponse, CancelReservationParams, CancelReservationQueryParams, ListRosterQueryParams, ListRosterResponse, GetAdminSummaryResponse, SwapSeatsParams, SwapSeatsBody, SwapSeatsResponse } from "@workspace/api-zod";
 import { requireUser, requireAdmin } from "../lib/auth";
 import { launchList, reservationById, seatsForLaunch, seatLabel, today } from "../lib/rowing";
@@ -57,12 +57,20 @@ router.delete("/reservations/:reservationId", async (req, res): Promise<void> =>
   if (!reservation) { res.status(404).json({ error: "Reservation not found." }); return; }
   const result = await db.transaction(async (tx) => {
     // Serialize cancellations with swaps and bookings for this launch.
-    await tx.select({ id: launchesTable.id }).from(launchesTable).where(eq(launchesTable.id, reservation.launchId)).for("update");
+    const [launch] = await tx.select().from(launchesTable).where(eq(launchesTable.id, reservation.launchId)).for("update");
     const [current] = await tx.select().from(reservationsTable).where(eq(reservationsTable.id, reservation.id)).for("update");
     if (!current) return { status: 404, error: "This reservation has already been cancelled." };
     if (current.userId !== res.locals.user.id && res.locals.user.role !== "admin") return { status: 403, error: "You can only cancel your own reservations." };
     if (query.data.expectedPosition !== undefined && current.position !== query.data.expectedPosition) return { status: 409, error: "This rower's seat has changed. Review the updated boat and select again." };
     await tx.delete(reservationsTable).where(eq(reservationsTable.id, current.id));
+    if (res.locals.user.role === "admin") {
+      const [boat] = await tx.select().from(boatsTable).where(eq(boatsTable.id, launch.boatId));
+      await tx.insert(noticesTable).values({
+        recipientId: current.userId, kind: "cancellation", boatName: boat.name,
+        date: launch.date, shift: launch.shift, oldPosition: current.position,
+        oldSeatLabel: seatLabel(boat.type, current.position, boat.seats),
+      });
+    }
     return { status: 204 };
   });
   if (result.error) { res.status(result.status).json({ error: result.error }); return; }
@@ -90,6 +98,16 @@ router.post("/admin/launches/:launchId/swap-seats", async (req, res): Promise<vo
     await tx.update(reservationsTable).set({ position: 0 }).where(eq(reservationsTable.id, first.id));
     await tx.update(reservationsTable).set({ position: first.position }).where(eq(reservationsTable.id, second.id));
     await tx.update(reservationsTable).set({ position: second.position }).where(eq(reservationsTable.id, first.id));
+    const [boat] = await tx.select().from(boatsTable).where(eq(boatsTable.id, launch.boatId));
+    await tx.insert(noticesTable).values([first, second].map((rower, index) => {
+      const newPosition = index === 0 ? second.position : first.position;
+      return {
+        recipientId: rower.userId, kind: "seat_swap", boatName: boat.name,
+        date: launch.date, shift: launch.shift, oldPosition: rower.position,
+        oldSeatLabel: seatLabel(boat.type, rower.position, boat.seats),
+        newPosition, newSeatLabel: seatLabel(boat.type, newPosition, boat.seats),
+      };
+    }));
     return { status: 200 };
   });
   if (result.error) { res.status(result.status).json({ error: result.error }); return; }
