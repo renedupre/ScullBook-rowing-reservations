@@ -75,6 +75,9 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # Typography's latest release still pins the vulnerable 6.x parser.
+  # 7.1.6 fixes quadratic selector parsing and retains the API it uses.
+  "@tailwindcss/typography>postcss-selector-parser": "7.1.6"
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"
